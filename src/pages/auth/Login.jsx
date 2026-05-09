@@ -1,137 +1,128 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, Mail, Lock, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { BookOpen, Eye, EyeOff } from 'lucide-react';
 
-const Login = () => {
-  const [email, setEmail] = useState('');
+export default function Login() {
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
+  const [showPwd, setShowPwd]   = useState(false);
+  const [error, setError]       = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  function handleSubmit(e) {
     e.preventDefault();
-    if(email && password) {
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userRole', 'admin');
-        navigate('/admin/dashboard');
-    }
-  };
+    if (!email || !password) { setError('Veuillez remplir tous les champs.'); return; }
+    // Demo: any credentials work
+    navigate('/admin/dashboard');
+  }
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center p-0 m-0" style={{ backgroundColor: '#0f172a' }}>
-      <div className="container-fluid p-0 h-100">
-        <div className="row g-0 min-vh-100">
-          
-          {/* Left Side: Modern Image Overlay */}
-          <div className="col-lg-7 d-none d-lg-flex flex-column justify-content-center p-5 text-white position-relative" 
-               style={{ 
-                 background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%), url("https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=2070&auto=format&fit=crop")',
-                 backgroundSize: 'cover',
-                 backgroundPosition: 'center'
-               }}>
-            
-            <div className="position-absolute top-0 start-0 p-5 d-flex align-items-center gap-2">
-               <div className="p-2 rounded-circle bg-white bg-opacity-10 shadow-sm border border-white border-opacity-20">
-                  <Sparkles size={24} className="text-white" />
-               </div>
-               <span className="fw-bold fs-4 tracking-tighter">BiblioTech <span className="fw-light opacity-50">v2.0</span></span>
-            </div>
-
-            <div className="max-w-md">
-              <h1 className="display-3 fw-bold mb-4 mt-5" style={{ letterSpacing: '-3px', lineHeight: '0.9' }}>
-                L'intelligence <br/>au service du <br/><span style={{ color: '#818cf8' }}>savoir.</span>
-              </h1>
-              <div className="d-flex align-items-center gap-3 mb-4">
-                <div className="bg-success bg-opacity-20 p-2 rounded-circle">
-                   <ShieldCheck size={20} className="text-success" />
-                </div>
-                <p className="m-0 opacity-75 fw-medium">Système de gestion sécurisé et optimisé.</p>
-              </div>
-            </div>
+    <div style={s.page}>
+      {/* Left panel */}
+      <div style={s.left}>
+        <div style={s.leftContent}>
+          <div style={s.logoMark}>
+            <div style={s.logoIcon}><BookOpen size={24} color="#0D0D0F" strokeWidth={2} /></div>
+            <span style={s.logoName}>BiblioTech</span>
           </div>
-
-          {/* Right Side: Clean Login Form */}
-          <div className="col-lg-5 d-flex align-items-center justify-content-center bg-white shadow-lg border-start border-white border-opacity-10">
-            <div className="p-5 w-100" style={{ maxWidth: '450px' }}>
-              
-              <div className="text-center mb-5">
-                {/* New Custom Icon Instead of Library */}
-                <div className="d-inline-flex p-4 rounded-4 mb-4 shadow-sm" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)' }}>
-                   <Sparkles size={40} className="text-white" />
-                </div>
-                <h2 className="fw-bold text-dark mb-1" style={{ letterSpacing: '-1px' }}>Connexion Admin</h2>
-                <p className="text-secondary small">Entrez vos accès pour piloter la plateforme</p>
-              </div>
-
-              <form onSubmit={handleSubmit}>
-                {/* Email */}
-                <div className="mb-3">
-                  <label className="form-label small fw-bold text-slate-600 mb-2 uppercase tracking-wider" style={{ fontSize: '11px' }}>Email Professionnel</label>
-                  <div className="position-relative">
-                    <Mail size={18} className="text-muted position-absolute top-50 translate-middle-y ms-3" />
-                    <input 
-                      type="email" 
-                      className="form-control bg-light border-0 py-3 ps-5 rounded-3 shadow-none fw-medium" 
-                      placeholder="admin@bibliotech.ma"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required 
-                    />
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div className="mb-4">
-                  <div className="d-flex justify-content-between">
-                    <label className="form-label small fw-bold text-slate-600 mb-2 uppercase tracking-wider" style={{ fontSize: '11px' }}>Mot de passe</label>
-                  </div>
-                  <div className="position-relative">
-                    <Lock size={18} className="text-muted position-absolute top-50 translate-middle-y ms-3" />
-                    <input 
-                      type="password" 
-                      className="form-control bg-light border-0 py-3 ps-5 rounded-3 shadow-none fw-medium" 
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required 
-                    />
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <button type="submit" className="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-indigo border-0 d-flex align-items-center justify-content-center gap-2 mt-2"
-                        style={{ background: '#6366f1', transition: 'all 0.3s ease' }}>
-                  Se Connecter
-                  <ArrowRight size={18} />
-                </button>
-
-                <div className="mt-5 pt-3 border-top text-center text-secondary small opacity-50">
-                   Accès réservé au personnel autorisé
-                </div>
-              </form>
-            </div>
+          <h1 style={s.headline}>La bibliothèque<br />à portée de main.</h1>
+          <p style={s.tagline}>Gérez vos livres, membres et prêts depuis un seul tableau de bord élégant.</p>
+          <div style={s.stats}>
+            <div style={s.statItem}><div style={s.statNum}>1 248</div><div style={s.statLbl}>Livres</div></div>
+            <div style={s.statItem}><div style={s.statNum}>342</div><div style={s.statLbl}>Membres</div></div>
+            <div style={s.statItem}><div style={s.statNum}>87</div><div style={s.statLbl}>Prêts actifs</div></div>
           </div>
-
         </div>
       </div>
 
-      <style>
-        {`
-          .shadow-indigo {
-            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4) !important;
-          }
-          .shadow-indigo:hover {
-            background: #4f46e5 !important;
-            transform: translateY(-2px);
-          }
-          .max-w-md { max-width: 550px; }
-          .form-control:focus {
-            background-color: #f1f5f9 !important;
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
-          }
-        `}
-      </style>
+      {/* Right panel */}
+      <div style={s.right}>
+        <div style={s.formBox}>
+          <div style={s.formHeader}>
+            <h2 style={s.formTitle}>Connexion</h2>
+            <p style={s.formSub}>Bienvenue sur votre espace administrateur.</p>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div style={s.field}>
+              <label style={s.label}>Email</label>
+              <input
+                style={s.input}
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="admin@bibliotech.ma"
+                autoComplete="email"
+              />
+            </div>
+
+            <div style={s.field}>
+              <label style={s.label}>Mot de passe</label>
+              <div style={s.pwdWrap}>
+                <input
+                  style={{ ...s.input, paddingRight: 42 }}
+                  type={showPwd ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  style={s.eyeBtn}
+                  onClick={() => setShowPwd(!showPwd)}
+                  aria-label={showPwd ? 'Masquer' : 'Afficher'}
+                >
+                  {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            {error && <p style={s.error}>{error}</p>}
+
+            <button type="submit" style={s.submitBtn}>
+              Se connecter
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
-};
+}
 
-export default Login;
+const s = {
+  page: { display: 'flex', height: '100vh', fontFamily: "'DM Sans', sans-serif" },
+
+  left: {
+    flex: 1,
+    background: 'var(--ink)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 60,
+  },
+  leftContent: { maxWidth: 400 },
+  logoMark: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 56 },
+  logoIcon: { width: 44, height: 44, background: 'var(--gold)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  logoName: { fontFamily: 'Syne, sans-serif', fontSize: 20, fontWeight: 700, color: '#fff' },
+  headline: { fontFamily: 'Syne, sans-serif', fontSize: 36, fontWeight: 700, color: '#fff', lineHeight: 1.2, marginBottom: 16 },
+  tagline: { fontSize: 15, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, marginBottom: 48 },
+  stats: { display: 'flex', gap: 32 },
+  statItem: {},
+  statNum: { fontFamily: 'Syne, sans-serif', fontSize: 24, fontWeight: 700, color: 'var(--gold)' },
+  statLbl: { fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+
+  right: { width: 460, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, background: 'var(--surface)' },
+  formBox: { width: '100%', maxWidth: 360 },
+  formHeader: { marginBottom: 32 },
+  formTitle: { fontFamily: 'Syne, sans-serif', fontSize: 24, fontWeight: 700, marginBottom: 6 },
+  formSub: { fontSize: 13, color: 'var(--text3)' },
+
+  field: { marginBottom: 18 },
+  label: { display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text3)', marginBottom: 8 },
+  input: { width: '100%', background: '#fff', border: '1px solid var(--border2)', borderRadius: 10, padding: '11px 14px', fontSize: 14, color: 'var(--text)', outline: 'none', transition: 'border 0.15s' },
+  pwdWrap: { position: 'relative' },
+  eyeBtn: { position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', color: 'var(--text3)', cursor: 'pointer', display: 'flex', alignItems: 'center' },
+  error: { fontSize: 12, color: 'var(--rose)', marginBottom: 12 },
+  submitBtn: { width: '100%', background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 10, padding: '13px', fontSize: 14, fontFamily: 'Syne, sans-serif', fontWeight: 600, letterSpacing: '0.04em', cursor: 'pointer', marginTop: 8 },
+};

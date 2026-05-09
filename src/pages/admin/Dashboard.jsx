@@ -1,183 +1,250 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Library, 
-  Users2, 
-  Handshake, 
-  TrendingUp, 
-  ArrowUpRight,
-  MoreHorizontal,
-  Download,
-  Plus,
-  ArrowRight
-} from 'lucide-react';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell 
-} from 'recharts';
+import React from 'react';
+import { TrendingUp, TrendingDown, BookOpen, Users, ArrowLeftRight, BarChart2 } from 'lucide-react';
 
-const Dashboard = () => {
-  const [stats, setStats] = useState({ books: 0, users: 0, loans: 0 });
-
-  useEffect(() => {
-    const b = JSON.parse(localStorage.getItem('myLibrary')) || [];
-    const u = JSON.parse(localStorage.getItem('myUsers')) || [];
-    const l = JSON.parse(localStorage.getItem('myLoans')) || [];
-    
-    setStats({ 
-      books: b.length, 
-      users: u.length, 
-      loans: l.filter(i => i.status === 'Active' || i.status === 'En cours').length 
-    });
-  }, []);
-
-  const activityData = [
-    { name: 'Lun', emprunts: 4 },
-    { name: 'Mar', emprunts: 7 },
-    { name: 'Mer', emprunts: 5 },
-    { name: 'Jeu', emprunts: 12 },
-    { name: 'Ven', emprunts: 9 },
-    { name: 'Sam', emprunts: 15 },
-    { name: 'Dim', emprunts: 10 },
-  ];
-
-  const categoryData = [
-    { name: 'Informatique', value: 40 },
-    { name: 'Roman', value: 30 },
-    { name: 'Droit', value: 15 },
-    { name: 'Science', value: 15 },
-  ];
-
-  const COLORS = ['#6366f1', '#8b5cf6', '#3b82f6', '#06b6d4'];
-
-  const cards = [
-    { title: 'Livres au Total', value: stats.books, icon: <Library size={22}/>, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' },
-    { title: 'Membres Actifs', value: stats.users, icon: <Users2 size={22}/>, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
-    { title: 'Prêts en Cours', value: stats.loans, icon: <Handshake size={22}/>, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-    { title: 'Taux de Croissance', value: '+14%', icon: <TrendingUp size={22}/>, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
-  ];
-
+// ── Stat Card ──────────────────────────────────────────────────────────────
+function StatCard({ label, value, trend, trendUp, icon: Icon, accent }) {
   return (
-    <div className="w-100">
-      
-      {/* Header Section */}
-      <div className="d-flex justify-content-between align-items-center mb-5">
-        <div>
-          <h2 className="fw-bold m-0 text-dark" style={{ letterSpacing: '-1.2px' }}>Aperçu Général</h2>
-          <p className="text-secondary small">Résumé de l'activité de votre bibliothèque pour aujourd'hui.</p>
-        </div>
-        <div className="d-flex gap-2">
-           <button className="btn btn-white shadow-sm rounded-3 border-0 px-3 py-2 text-secondary fw-bold small d-flex align-items-center gap-2">
-             <Download size={16} /> EXPORTER
-           </button>
-           <button className="btn btn-primary shadow-indigo rounded-3 px-4 py-2 fw-bold small border-0 d-flex align-items-center gap-2" style={{ background: '#6366f1' }}>
-             <Plus size={18} /> AJOUTER UN LIVRE
-           </button>
-        </div>
+    <div style={{ ...s.statCard, '--accent': accent }}>
+      <div style={s.statAccentBar} />
+      <div style={s.statLabel}>{label}</div>
+      <div style={s.statValue}>{value}</div>
+      <div style={{ ...s.statTrend, color: trendUp ? 'var(--teal)' : 'var(--rose)' }}>
+        {trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+        <span style={{ marginLeft: 4 }}>{trend}</span>
       </div>
+      <div style={s.statIconBg}>
+        <Icon size={22} />
+      </div>
+    </div>
+  );
+}
 
-      {/* Stats Cards */}
-      <div className="row g-4 mb-5">
-        {cards.map((card, i) => (
-          <div key={i} className="col-md-3">
-            <div className="card border-0 shadow-sm rounded-4 p-4 hover-lift">
-              <div className="d-flex justify-content-between align-items-start mb-3">
-                <div className="p-3 rounded-4 shadow-sm" style={{ backgroundColor: card.bg, color: card.color }}>
-                  {card.icon}
-                </div>
-                <div className="bg-light p-1 rounded-circle cursor-pointer">
-                  <MoreHorizontal size={16} className="text-muted" />
-                </div>
-              </div>
-              <div>
-                <p className="text-uppercase fw-bold text-muted mb-1" style={{ fontSize: '10px', letterSpacing: '1px' }}>{card.title}</p>
-                <div className="d-flex align-items-baseline gap-2">
-                    <h2 className="fw-bold m-0 text-slate-800">{card.value}</h2>
-                    <span className="text-success small fw-bold" style={{ fontSize: '11px' }}><ArrowUpRight size={12}/> 2.5%</span>
-                </div>
-              </div>
-            </div>
+// ── Bar Chart ──────────────────────────────────────────────────────────────
+const BAR_DATA = [
+  { day: 'Lun', val: 55 },
+  { day: 'Mar', val: 70 },
+  { day: 'Mer', val: 45 },
+  { day: 'Jeu', val: 90 },
+  { day: 'Ven', val: 75 },
+  { day: 'Sam', val: 60 },
+  { day: 'Dim', val: 40 },
+];
+
+function BarChart() {
+  return (
+    <div style={s.barWrap}>
+      {BAR_DATA.map(({ day, val }) => (
+        <div key={day} style={s.barGroup}>
+          <div
+            style={{
+              ...s.bar,
+              height: `${val}%`,
+              background: val === 90 ? 'var(--gold)' : 'var(--ink)',
+              opacity: val === 90 ? 1 : 0.09,
+            }}
+          />
+          <span style={s.barLabel}>{day}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Donut Chart ────────────────────────────────────────────────────────────
+const DONUT_DATA = [
+  { label: 'Informatique', pct: 40, color: '#C9A84C', dash: 95.5, offset: 0 },
+  { label: 'Roman',        pct: 30, color: '#1A7A6B', dash: 71.6, offset: -95.5 },
+  { label: 'Droit',        pct: 15, color: '#7C6EE8', dash: 35.8, offset: -167 },
+  { label: 'Science',      pct: 15, color: '#E87A7A', dash: 35.8, offset: -202.8 },
+];
+const R = 38, C = 2 * Math.PI * R;
+
+function DonutChart() {
+  return (
+    <>
+      <div style={s.donutWrap}>
+        <svg width={110} height={110} viewBox="0 0 100 100" aria-label="Répartition du stock par catégorie">
+          <circle cx="50" cy="50" r={R} fill="none" stroke="var(--surface2)" strokeWidth="12" />
+          {DONUT_DATA.map(({ color, dash, offset, label }) => (
+            <circle
+              key={label}
+              cx="50" cy="50" r={R}
+              fill="none"
+              stroke={color}
+              strokeWidth="12"
+              strokeDasharray={`${dash} ${C - dash}`}
+              strokeDashoffset={offset}
+              transform="rotate(-90 50 50)"
+            />
+          ))}
+        </svg>
+      </div>
+      <div style={s.legendList}>
+        {DONUT_DATA.map(({ label, pct, color }) => (
+          <div key={label} style={s.legendItem}>
+            <div style={{ ...s.legendDot, background: color }} />
+            <span style={s.legendName}>{label}</span>
+            <span style={s.legendPct}>{pct}%</span>
           </div>
         ))}
       </div>
+    </>
+  );
+}
 
-      {/* Charts Section */}
-      <div className="row g-4">
-        <div className="col-md-8">
-          <div className="card border-0 shadow-sm rounded-4 p-4 h-100">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h6 className="fw-bold m-0 text-dark">Flux des Emprunts</h6>
-              <div className="d-flex gap-2">
-                <span className="badge bg-indigo-soft text-indigo border-0 rounded-pill px-3 py-2 small">Hebdomadaire</span>
-              </div>
-            </div>
-            <div style={{ width: '100%', height: 350 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={activityData}>
-                  <defs>
-                    <linearGradient id="colorIndigo" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                  <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}} />
-                  <Area type="monotone" dataKey="emprunts" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorIndigo)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+// ── Recent Loans ───────────────────────────────────────────────────────────
+const RECENT_LOANS = [
+  { emoji: '📘', bg: '#FFF8E1', title: 'Clean Code',          author: 'R. C. Martin',        member: 'Sara Alami',    status: 'active' },
+  { emoji: '📗', bg: '#E8F5E9', title: 'Le Petit Prince',     author: 'A. de Saint-Exupéry', member: 'Karim Benali',  status: 'ok' },
+  { emoji: '📕', bg: '#FCE4EC', title: 'Code Civil Marocain', author: 'Éd. Officielle',      member: 'Nadia El Fassi',status: 'late' },
+  { emoji: '📙', bg: '#E3F2FD', title: 'Deep Learning',       author: 'Ian Goodfellow',      member: 'Youssef M.',    status: 'active' },
+];
+const STATUS_STYLE = {
+  active: { background: 'var(--teal3)', color: 'var(--teal)',  label: 'En cours' },
+  ok:     { background: '#E8F5E9',      color: '#2E7D32',      label: 'Rendu'    },
+  late:   { background: 'var(--rose3)', color: 'var(--rose)',  label: 'En retard'},
+};
+
+// ── Activity ───────────────────────────────────────────────────────────────
+const ACTIVITY = [
+  { color: 'var(--teal2)',  text: <><strong>Sara Alami</strong> a emprunté "Clean Code"</>,          time: 'Il y a 12 min' },
+  { color: 'var(--gold)',   text: <>Nouveau livre ajouté : <strong>"Architecture Hexagonale"</strong></>, time: 'Il y a 1h' },
+  { color: 'var(--rose2)',  text: <><strong>Nadia E.</strong> — retard de 3 jours signalé</>,        time: 'Il y a 2h' },
+  { color: 'var(--purple)', text: <><strong>Karim B.</strong> a rendu "Le Petit Prince"</>,          time: 'Hier, 16h30' },
+  { color: 'var(--teal2)',  text: <>Nouveau membre inscrit : <strong>Imane Tazi</strong></>,         time: 'Hier, 14h00' },
+];
+
+// ── Page ───────────────────────────────────────────────────────────────────
+export default function Dashboard() {
+  return (
+    <div>
+      <div style={s.pageHeader}>
+        <h1 style={s.pageTitle}>Aperçu Général</h1>
+        <p style={s.pageSubtitle}>Résumé de l'activité de votre bibliothèque pour aujourd'hui.</p>
+      </div>
+
+      {/* STATS */}
+      <div style={s.statsGrid}>
+        <StatCard label="Livres au total"   value="1 248" trend="+2.5% ce mois"     trendUp icon={BookOpen}       accent="var(--gold)" />
+        <StatCard label="Membres actifs"    value="342"   trend="+8 cette semaine"  trendUp icon={Users}          accent="var(--teal2)" />
+        <StatCard label="Prêts en cours"    value="87"    trend="4 en retard"              icon={ArrowLeftRight}  accent="var(--rose2)" />
+        <StatCard label="Taux de croissance"value="+14%"  trend="vs mois dernier"   trendUp icon={BarChart2}      accent="var(--purple)" />
+      </div>
+
+      {/* CHARTS */}
+      <div style={s.chartsRow}>
+        <div style={s.chartCard}>
+          <div style={s.chartHeader}>
+            <span style={s.chartTitle}>Flux des Emprunts</span>
+            <span style={s.chartBadge}>Hebdomadaire</span>
           </div>
+          <BarChart />
         </div>
-
-        <div className="col-md-4">
-          <div className="card border-0 shadow-sm rounded-4 p-4 h-100">
-            <h6 className="fw-bold mb-4 text-dark">Répartition du Stock</h6>
-            <div style={{ width: '100%', height: 220 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={categoryData} innerRadius={70} outerRadius={90} paddingAngle={10} dataKey="value">
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={10} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            
-            <div className="mt-4">
-               {categoryData.map((item, i) => (
-                 <div key={i} className="d-flex align-items-center justify-content-between py-2 border-bottom border-light border-opacity-50">
-                   <div className="d-flex align-items-center gap-2">
-                     <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: COLORS[i] }}></div>
-                     <span className="small text-secondary fw-medium">{item.name}</span>
-                   </div>
-                   <span className="small fw-bold text-dark">{item.value}%</span>
-                 </div>
-               ))}
-            </div>
-
-            <button className="btn btn-light w-100 mt-4 rounded-3 border-0 py-2 small fw-bold text-indigo d-flex align-items-center justify-content-center gap-2">
-                DÉTAILS DU STOCK <ArrowRight size={14}/>
-            </button>
+        <div style={s.chartCard}>
+          <div style={s.chartHeader}>
+            <span style={s.chartTitle}>Répartition du Stock</span>
           </div>
+          <DonutChart />
         </div>
       </div>
 
-      <style>
-        {`
-          .shadow-indigo { box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3) !important; }
-          .bg-indigo-soft { background-color: rgba(99, 102, 241, 0.1); }
-          .text-indigo { color: #6366f1; }
-          .text-slate-800 { color: #1e293b; }
-          .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-          .hover-lift:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(0,0,0,0.1) !important; }
-          .btn-white { background: white; color: #64748b; }
-        `}
-      </style>
+      {/* RECENT */}
+      <div style={s.recentRow}>
+        <div style={s.sectionCard}>
+          <div style={s.sectionHeader}>
+            <span style={s.sectionTitle}>Prêts Récents</span>
+            <a href="/admin/loans" style={s.seeAll}>Voir tout →</a>
+          </div>
+          {RECENT_LOANS.map((loan, i) => {
+            const st = STATUS_STYLE[loan.status];
+            return (
+              <div key={i} style={{ ...s.loanItem, borderBottom: i < RECENT_LOANS.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <div style={{ ...s.loanCover, background: loan.bg }}>{loan.emoji}</div>
+                <div style={s.loanInfo}>
+                  <div style={s.loanTitle}>{loan.title}</div>
+                  <div style={s.loanMeta}>{loan.author} · {loan.member}</div>
+                </div>
+                <span style={{ ...s.loanBadge, background: st.background, color: st.color }}>{st.label}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={s.sectionCard}>
+          <div style={s.sectionHeader}>
+            <span style={s.sectionTitle}>Activité récente</span>
+          </div>
+          {ACTIVITY.map((a, i) => (
+            <div key={i} style={{ ...s.activityItem, borderBottom: i < ACTIVITY.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ ...s.activityDot, background: a.color }} />
+              <div style={{ flex: 1 }}>
+                <div style={s.activityText}>{a.text}</div>
+                <div style={s.activityTime}>{a.time}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
-};
+}
 
-export default Dashboard;
+const s = {
+  pageHeader: { marginBottom: 24 },
+  pageTitle:  { fontSize: 22, fontWeight: 700, marginBottom: 4 },
+  pageSubtitle: { color: 'var(--text3)', fontSize: 13 },
+
+  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 },
+  statCard: {
+    background: '#fff',
+    border: '1px solid var(--border)',
+    borderRadius: 16,
+    padding: '18px 20px',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  statAccentBar: {
+    position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+    background: 'var(--accent)',
+  },
+  statLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text3)', marginBottom: 10 },
+  statValue: { fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 700, marginBottom: 6 },
+  statTrend: { fontSize: 11, display: 'flex', alignItems: 'center' },
+  statIconBg: { position: 'absolute', right: 16, top: 16, opacity: 0.1, color: 'var(--text)' },
+
+  chartsRow: { display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 14, marginBottom: 24 },
+  chartCard: { background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: 20 },
+  chartHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+  chartTitle: { fontFamily: 'Syne, sans-serif', fontSize: 13, fontWeight: 600 },
+  chartBadge: { background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 11, color: 'var(--text2)' },
+
+  barWrap: { display: 'flex', alignItems: 'flex-end', gap: 8, height: 120 },
+  barGroup: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' },
+  bar: { width: '100%', borderRadius: '4px 4px 0 0', minHeight: 4, transition: 'height 0.3s ease' },
+  barLabel: { fontSize: 10, color: 'var(--text3)' },
+
+  donutWrap: { display: 'flex', justifyContent: 'center', marginBottom: 14 },
+  legendList: { display: 'flex', flexDirection: 'column', gap: 8 },
+  legendItem: { display: 'flex', alignItems: 'center', fontSize: 12 },
+  legendDot: { width: 8, height: 8, borderRadius: '50%', marginRight: 8, flexShrink: 0 },
+  legendName: { flex: 1, color: 'var(--text2)' },
+  legendPct: { fontWeight: 500 },
+
+  recentRow: { display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 14 },
+  sectionCard: { background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: 20 },
+  sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  sectionTitle: { fontFamily: 'Syne, sans-serif', fontSize: 13, fontWeight: 600 },
+  seeAll: { fontSize: 11, color: 'var(--teal2)', textDecoration: 'none' },
+
+  loanItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0' },
+  loanCover: { width: 28, height: 38, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 },
+  loanInfo: { flex: 1 },
+  loanTitle: { fontSize: 12, fontWeight: 500, marginBottom: 2 },
+  loanMeta: { fontSize: 11, color: 'var(--text3)' },
+  loanBadge: { fontSize: 10, padding: '3px 8px', borderRadius: 20, fontWeight: 500 },
+
+  activityItem: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0' },
+  activityDot: { width: 8, height: 8, borderRadius: '50%', marginTop: 4, flexShrink: 0 },
+  activityText: { fontSize: 12, lineHeight: 1.5 },
+  activityTime: { fontSize: 11, color: 'var(--text3)', marginTop: 2 },
+};
