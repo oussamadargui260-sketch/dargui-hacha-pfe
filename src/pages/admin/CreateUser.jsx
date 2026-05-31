@@ -1,144 +1,181 @@
+// src/pages/admin/CreateUser.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, X, Save, Mail, Shield, Activity } from 'lucide-react';
+import Button from '../../components/Button';
+import Input from '../../components/Input';
 
-const CreateUser = () => {
+const ROLES = [
+  { value: 'user', label: 'Utilisateur' },
+  { value: 'admin', label: 'Admin' },
+];
+
+function BackIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+export default function CreateUser() {
   const navigate = useNavigate();
-  
-  const [userData, setUserData] = useState({
+
+  const [form, setForm] = useState({
     name: '',
     email: '',
-    role: 'Client',
-    status: 'Actif'
+    role: 'user',
+    password: '',
+    password_confirmation: '',
   });
 
-  const handleChange = (e) => {
-    setUserData({ ...userData, [e.target.name]: e.target.value });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const onChange = e => {
+    setForm(current => ({
+      ...current,
+      [e.target.name]: e.target.value,
+    }));
+
+    setErrors(current => ({
+      ...current,
+      [e.target.name]: '',
+    }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
+    setLoading(true);
 
-    const existingUsers = JSON.parse(localStorage.getItem('myUsers')) || [
-      { id: 1, name: 'Oussama Dr', email: 'oussama@gmail.com', role: 'Admin', status: 'Actif' },
-      { id: 2, name: 'Sami Ben', email: 'sami@example.com', role: 'Client', status: 'Actif' },
-      { id: 3, name: 'Houda Al', email: 'houda@example.com', role: 'Client', status: 'Inactif' }
-    ];
+    try {
+      const existingUsers = JSON.parse(localStorage.getItem('myUsers')) || [];
 
-    const newUser = {
-      ...userData,
-      id: Date.now()
-    };
+      const newUser = {
+        id: Date.now(),
+        name: form.name,
+        email: form.email,
+        role: form.role,
+        created_at: new Date().toISOString(),
+        loans_count: 0,
+      };
 
-    const updatedUsers = [newUser, ...existingUsers];
-    localStorage.setItem('myUsers', JSON.stringify(updatedUsers));
-
-    alert("Utilisateur ajouté avec succès !");
-    navigate('/admin/users');
+      localStorage.setItem('myUsers', JSON.stringify([newUser, ...existingUsers]));
+      navigate('/admin/users');
+    } catch (err) {
+      setErrors({
+        name: err?.message ?? 'Erreur',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="container-fluid py-4">
-     
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="fw-bold m-0 h4 text-dark text-uppercase tracking-wide">Nouvel Utilisateur</h2>
-          <p className="text-muted small m-0">Créez un nouveau compte membre ou administrateur.</p>
-        </div>
-        <button 
-          onClick={() => navigate('/admin/users')} 
-          className="btn btn-outline-secondary d-flex align-items-center gap-2 rounded-3 px-3 shadow-sm"
+    <div className="flex flex-col gap-5 max-w-3xl">
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition"
         >
-          <X size={18} /> Annuler
+          <BackIcon />
         </button>
-      </div>
 
-  
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div className="card-body p-4 p-md-5">
-          <form onSubmit={handleSubmit}>
-            
-          
-            <div className="mb-4">
-              <label className="form-label fw-bold small text-secondary d-flex align-items-center gap-2">
-                <UserPlus size={16} /> NOM COMPLET
-              </label>
-              <input 
-                type="text" 
-                name="name"
-                className="form-control form-control-lg bg-light border-0 p-3 rounded-3 fs-6" 
-                placeholder="Ex: Ahmed Benani" 
-                required
-                onChange={handleChange} 
-                value={userData.name}
-              />
-            </div>
-
-           
-            <div className="mb-4">
-              <label className="form-label fw-bold small text-secondary d-flex align-items-center gap-2">
-                <Mail size={16} /> ADRESSE EMAIL
-              </label>
-              <input 
-                type="email" 
-                name="email"
-                className="form-control form-control-lg bg-light border-0 p-3 rounded-3 fs-6" 
-                placeholder="ahmed@example.com" 
-                required
-                onChange={handleChange}
-                value={userData.email}
-              />
-            </div>
-
-            <div className="row">
-            
-              <div className="col-md-6 mb-4">
-                <label className="form-label fw-bold small text-secondary d-flex align-items-center gap-2">
-                  <Shield size={16} /> RÔLE
-                </label>
-                <select 
-                  name="role"
-                  className="form-select form-select-lg bg-light border-0 p-3 rounded-3 fs-6 cursor-pointer"
-                  onChange={handleChange}
-                  value={userData.role}
-                >
-                  <option value="Client">Client</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Bibliothécaire">Bibliothécaire</option>
-                </select>
-              </div>
-
-              <div className="col-md-6 mb-4">
-                <label className="form-label fw-bold small text-secondary d-flex align-items-center gap-2">
-                  <Activity size={16} /> STATUT
-                </label>
-                <select 
-                  name="status"
-                  className="form-select form-select-lg bg-light border-0 p-3 rounded-3 fs-6 cursor-pointer"
-                  onChange={handleChange}
-                  value={userData.status}
-                >
-                  <option value="Actif">Actif</option>
-                  <option value="Inactif">Inactif</option>
-                </select>
-              </div>
-            </div>
-
-          
-            <div className="pt-2">
-              <button 
-                type="submit" 
-                className="btn btn-primary w-100 py-3 rounded-3 fw-bold border-0 shadow-lg d-flex align-items-center justify-content-center gap-2"
-                style={{ backgroundColor: '#0061f2' }}
-              >
-                <Save size={20} /> Créer l'utilisateur
-              </button>
-            </div>
-          </form>
+        <div>
+          <h2 className="page-title">Créer un utilisateur</h2>
+          <p className="page-subtitle">
+            Ajoutez un nouveau membre à votre bibliothèque.
+          </p>
         </div>
       </div>
+
+      <form onSubmit={handleSubmit}>
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-4">
+          <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-3">
+            Informations du compte
+          </h3>
+
+          <Input
+            label="Nom complet"
+            name="name"
+            value={form.name}
+            onChange={onChange}
+            error={errors.name}
+            placeholder="Ex: Ahmed Benani"
+            required
+          />
+
+          <Input
+            label="Adresse email"
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={onChange}
+            error={errors.email}
+            placeholder="ahmed@example.com"
+            required
+          />
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Rôle
+            </label>
+
+            <select
+              name="role"
+              value={form.role}
+              onChange={onChange}
+              className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+            >
+              {ROLES.map(role => (
+                <option key={role.value} value={role.value}>
+                  {role.label}
+                </option>
+              ))}
+            </select>
+
+            {errors.role && (
+              <p className="text-xs text-red-500">{errors.role}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Mot de passe"
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={onChange}
+              error={errors.password}
+              placeholder="••••••••"
+            />
+
+            <Input
+              label="Confirmer le mot de passe"
+              name="password_confirmation"
+              type="password"
+              value={form.password_confirmation}
+              onChange={onChange}
+              error={errors.password_confirmation}
+              placeholder="••••••••"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" loading={loading} size="lg">
+              Créer l'utilisateur
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              onClick={() => navigate(-1)}
+            >
+              Annuler
+            </Button>
+          </div>
+        </div>
+      </form>
     </div>
   );
-};
-
-export default CreateUser;
+}

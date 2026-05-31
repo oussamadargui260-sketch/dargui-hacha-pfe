@@ -1,220 +1,436 @@
+// src/pages/admin/Books.jsx
 import React, { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useBooks } from '../../hooks/useBooks';
+import { bookService } from '../../services/api';
+import Table, { Pagination } from '../../components/Table';
+import { AvailBadge } from '../../components/Badge';
+import Button from '../../components/Button';
 
-const CATEGORIES = ['Toutes', 'Informatique', 'Roman', 'Droit', 'Science'];
-const STATUSES   = ['Tous', 'Disponible', 'Emprunté'];
-
-const INITIAL_BOOKS = [
-  { id: 1, emoji: '📘', bg: '#FFF8E1', title: 'Clean Code',              author: 'Robert C. Martin',       category: 'Informatique', status: 'Disponible' },
-  { id: 2, emoji: '📕', bg: '#F3E5F5', title: 'Le Petit Prince',         author: 'A. de Saint-Exupéry',    category: 'Roman',        status: 'Emprunté'   },
-  { id: 3, emoji: '📗', bg: '#E3F2FD', title: 'Deep Learning',           author: 'Ian Goodfellow',          category: 'Informatique', status: 'Disponible' },
-  { id: 4, emoji: '📙', bg: '#FCE4EC', title: 'Code Civil Marocain',     author: 'Éd. Officielle',         category: 'Droit',        status: 'Emprunté'   },
-  { id: 5, emoji: '📔', bg: '#E8F5E9', title: 'Design Patterns',         author: 'GoF',                    category: 'Informatique', status: 'Disponible' },
-  { id: 6, emoji: '📒', bg: '#FFF3E0', title: "L'Étranger",              author: 'Albert Camus',            category: 'Roman',        status: 'Disponible' },
-  { id: 7, emoji: '📓', bg: '#E1F5FE', title: 'Physique Quantique',      author: 'Richard Feynman',         category: 'Science',      status: 'Emprunté'   },
-  { id: 8, emoji: '📚', bg: '#F9FBE7', title: 'The Pragmatic Programmer',author: 'David Thomas',            category: 'Informatique', status: 'Disponible' },
+const CATS = [
+  '',
+  'Fiction',
+  'Science Fiction',
+  'Histoire',
+  'Technologie',
+  'Développement',
+  'Philosophie',
+  'Biographie',
 ];
 
-const EMPTY_FORM = { title: '', author: '', category: 'Informatique', isbn: '', copies: 1 };
+const BOOK_IMAGES = {
+  Dune: 'https://covers.openlibrary.org/b/isbn/9780441013593-L.jpg',
+  '1984': 'https://covers.openlibrary.org/b/isbn/9780451524935-L.jpg',
+  Sapiens: 'https://covers.openlibrary.org/b/isbn/9780062316097-L.jpg',
+  'Le Grand Gatsby': 'https://covers.openlibrary.org/b/isbn/9780743273565-L.jpg',
+  'The Great Gatsby': 'https://covers.openlibrary.org/b/isbn/9780743273565-L.jpg',
+  'To Kill a Mockingbird': 'https://covers.openlibrary.org/b/isbn/9780060935467-L.jpg',
+  'The Catcher in the Rye': 'https://covers.openlibrary.org/b/isbn/9780316769174-L.jpg',
+  'Clean Code': 'https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg',
+  'Design Patterns': 'https://covers.openlibrary.org/b/isbn/9780201633610-L.jpg',
+};
 
-export default function Books() {
-  const [books, setBooks]             = useState(INITIAL_BOOKS);
-  const [search, setSearch]           = useState('');
-  const [catFilter, setCatFilter]     = useState('Toutes');
-  const [statusFilter, setStatusFilter] = useState('Tous');
-  const [modal, setModal]             = useState(false);
-  const [form, setForm]               = useState(EMPTY_FORM);
-  const [editId, setEditId]           = useState(null);
+const GRADS = [
+  'from-violet-500 to-purple-600',
+  'from-blue-500 to-cyan-600',
+  'from-emerald-500 to-teal-600',
+  'from-orange-400 to-rose-500',
+  'from-pink-500 to-fuchsia-600',
+  'from-amber-400 to-orange-500',
+  'from-sky-400 to-blue-600',
+  'from-green-400 to-emerald-600',
+];
 
-  const filtered = books.filter(b => {
-    const matchSearch = b.title.toLowerCase().includes(search.toLowerCase()) ||
-                        b.author.toLowerCase().includes(search.toLowerCase());
-    const matchCat    = catFilter === 'Toutes' || b.category === catFilter;
-    const matchStatus = statusFilter === 'Tous'  || b.status === statusFilter;
-    return matchSearch && matchCat && matchStatus;
-  });
+const grad = s => {
+  let h = 0;
+  for (let c of s || '') h = (h * 31 + c.charCodeAt(0)) % GRADS.length;
+  return GRADS[Math.abs(h) % GRADS.length];
+};
 
-  function openAdd()       { setForm(EMPTY_FORM); setEditId(null); setModal(true); }
-  function openEdit(book)  { setForm({ title: book.title, author: book.author, category: book.category, isbn: book.isbn || '', copies: 1 }); setEditId(book.id); setModal(true); }
-  function closeModal()    { setModal(false); }
+function PlusIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
 
-  function handleSave() {
-    if (!form.title.trim() || !form.author.trim()) return;
-    if (editId) {
-      setBooks(books.map(b => b.id === editId ? { ...b, ...form } : b));
-    } else {
-      const emojis = ['📘','📕','📗','📙','📔','📒','📓','📚'];
-      const bgs    = ['#FFF8E1','#F3E5F5','#E3F2FD','#FCE4EC','#E8F5E9','#FFF3E0','#E1F5FE','#F9FBE7'];
-      const idx    = books.length % 8;
-      setBooks([...books, { id: Date.now(), emoji: emojis[idx], bg: bgs[idx], status: 'Disponible', ...form }]);
-    }
-    closeModal();
-  }
+function SearchIcon() {
+  return (
+    <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+    </svg>
+  );
+}
 
-  function handleDelete(id) {
-    if (window.confirm('Supprimer ce livre ?')) {
-      setBooks(books.filter(b => b.id !== id));
-    }
+function BookCover({ book, size = 'table' }) {
+  const [failed, setFailed] = useState(false);
+
+  const isbn = book?.isbn?.replaceAll('-', '')?.trim();
+  const cover =
+    book?.cover_image ||
+    book?.image ||
+    BOOK_IMAGES[book?.title] ||
+    (isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg` : null);
+
+  const sizeClass =
+    size === 'card'
+      ? 'w-full h-56'
+      : 'w-12 h-16';
+
+  if (!cover || failed) {
+    return (
+      <div
+        className={`${sizeClass} rounded-xl bg-gradient-to-br ${grad(
+          book?.title
+        )} flex items-center justify-center border border-slate-200 shadow-sm shrink-0 overflow-hidden`}
+      >
+        <div className="text-center px-2">
+          <svg className="w-7 h-7 mx-auto text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+            />
+          </svg>
+          {size === 'card' && (
+            <p className="text-white/80 text-xs font-semibold mt-2 line-clamp-2">
+              {book?.title}
+            </p>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div style={s.pageHeader}>
-        <h1 style={s.pageTitle}>Catalogue de Livres</h1>
-        <p style={s.pageSubtitle}>Gérez votre inventaire et suivez la disponibilité en temps réel.</p>
-      </div>
+    <img
+      src={cover}
+      alt={book?.title}
+      onError={() => setFailed(true)}
+      className={`${sizeClass} object-cover rounded-xl border border-slate-200 shadow-sm shrink-0 bg-slate-100`}
+    />
+  );
+}
 
-      {/* FILTERS */}
-      <div style={s.filterBar}>
-        <div style={s.filterSearch}>
-          <Search size={14} color="var(--text3)" />
-          <input
-            style={s.filterInput}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Titre, auteur, ISBN..."
-          />
-        </div>
-
-        <select style={s.select} value={catFilter} onChange={e => setCatFilter(e.target.value)}>
-          {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-        </select>
-
-        <select style={s.select} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          {STATUSES.map(s => <option key={s}>{s}</option>)}
-        </select>
-
-        <div style={s.count}>{filtered.length} livre{filtered.length > 1 ? 's' : ''}</div>
-
-        <button style={s.addBtn} onClick={openAdd}>
-          <Plus size={14} /> Ajouter un livre
-        </button>
-      </div>
-
-      {/* GRID */}
-      {filtered.length === 0 ? (
-        <div style={s.empty}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-          <div style={s.emptyTitle}>Aucun livre trouvé</div>
-          <div style={s.emptyText}>Essayez d'autres filtres ou ajoutez un nouveau livre.</div>
-        </div>
-      ) : (
-        <div style={s.grid}>
-          {filtered.map(book => (
-            <div key={book.id} style={s.bookCard}>
-              <div style={{ ...s.bookCover, background: book.bg }}>
-                <span style={{ fontSize: 36 }}>{book.emoji}</span>
-                <span style={{
-                  ...s.bookBadge,
-                  background: book.status === 'Disponible' ? 'var(--teal3)' : 'var(--rose3)',
-                  color:      book.status === 'Disponible' ? 'var(--teal)'  : 'var(--rose)',
-                }}>
-                  {book.status}
-                </span>
-              </div>
-              <div style={s.bookInfo}>
-                <div style={s.bookTitle}>{book.title}</div>
-                <div style={s.bookAuthor}>{book.author}</div>
-                <div style={s.bookFooter}>
-                  <span style={s.bookCat}>{book.category}</span>
-                  <div style={s.bookActions}>
-                    <button style={s.rowBtn} onClick={() => openEdit(book)} aria-label="Modifier">
-                      <Edit2 size={12} />
-                    </button>
-                    <button style={{ ...s.rowBtn, color: 'var(--rose)' }} onClick={() => handleDelete(book.id)} aria-label="Supprimer">
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* MODAL */}
-      {modal && (
-        <div style={s.overlay} onClick={e => e.target === e.currentTarget && closeModal()}>
-          <div style={s.modal}>
-            <div style={s.modalHeader}>
-              <h2 style={s.modalTitle}>{editId ? 'Modifier le livre' : 'Ajouter un nouveau livre'}</h2>
-              <button style={s.closeBtn} onClick={closeModal}><X size={18} /></button>
-            </div>
-
-            <div style={s.formRow}>
-              <label style={s.label}>Titre *</label>
-              <input style={s.input} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Titre du livre" />
-            </div>
-            <div style={s.formRow}>
-              <label style={s.label}>Auteur *</label>
-              <input style={s.input} value={form.author} onChange={e => setForm({ ...form, author: e.target.value })} placeholder="Nom de l'auteur" />
-            </div>
-            <div style={s.formRow2}>
-              <div style={s.formRow}>
-                <label style={s.label}>Catégorie</label>
-                <select style={s.input} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                  {CATEGORIES.filter(c => c !== 'Toutes').map(c => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div style={s.formRow}>
-                <label style={s.label}>ISBN</label>
-                <input style={s.input} value={form.isbn} onChange={e => setForm({ ...form, isbn: e.target.value })} placeholder="978-..." />
-              </div>
-            </div>
-            <div style={s.formRow}>
-              <label style={s.label}>Nombre d'exemplaires</label>
-              <input style={s.input} type="number" min="1" value={form.copies} onChange={e => setForm({ ...form, copies: parseInt(e.target.value) || 1 })} />
-            </div>
-
-            <div style={s.modalFooter}>
-              <button style={s.btnCancel} onClick={closeModal}>Annuler</button>
-              <button style={s.btnSave} onClick={handleSave}>Enregistrer</button>
-            </div>
-          </div>
-        </div>
-      )}
+function StatMini({ label, value }) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl px-5 py-4">
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</p>
+      <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
     </div>
   );
 }
 
-const s = {
-  pageHeader: { marginBottom: 24 },
-  pageTitle:  { fontSize: 22, fontWeight: 700, marginBottom: 4 },
-  pageSubtitle: { color: 'var(--text3)', fontSize: 13 },
+export default function Books() {
+  const navigate = useNavigate();
+  const {
+    books,
+    meta,
+    loading,
+    params,
+    setPage,
+    setSearch,
+    setCategory,
+    refresh,
+  } = useBooks();
 
-  filterBar: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' },
-  filterSearch: { display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1px solid var(--border2)', borderRadius: 8, padding: '8px 14px', flex: 1, maxWidth: 280 },
-  filterInput: { border: 'none', background: 'transparent', fontSize: 13, outline: 'none', flex: 1, color: 'var(--text)' },
-  select: { background: '#fff', border: '1px solid var(--border2)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: 'var(--text)', outline: 'none' },
-  count: { fontSize: 12, color: 'var(--text3)', marginLeft: 4 },
-  addBtn: { background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 12, fontFamily: 'Syne, sans-serif', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' },
+  const [search, setLocalSearch] = useState('');
+  const [deleting, setDeleting] = useState(null);
+  const [view, setView] = useState('table');
 
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 },
-  bookCard: { background: '#fff', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', transition: 'all 0.18s' },
-  bookCover: { height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  bookBadge: { position: 'absolute', top: 8, right: 8, fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 500 },
-  bookInfo: { padding: 12 },
-  bookTitle: { fontSize: 12, fontWeight: 500, marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  bookAuthor: { fontSize: 11, color: 'var(--text3)', marginBottom: 8 },
-  bookFooter: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  bookCat: { fontSize: 10, background: 'var(--surface2)', borderRadius: 4, padding: '2px 7px', color: 'var(--text2)' },
-  bookActions: { display: 'flex', gap: 4 },
-  rowBtn: { width: 24, height: 24, borderRadius: 6, border: '1px solid var(--border2)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', cursor: 'pointer' },
+  const totalAvailable = books.reduce(
+    (sum, book) => sum + Number(book.available_quantity ?? 0),
+    0
+  );
 
-  empty: { textAlign: 'center', padding: '60px 20px', color: 'var(--text3)' },
-  emptyTitle: { fontSize: 15, fontWeight: 500, color: 'var(--text2)', marginBottom: 6 },
-  emptyText: { fontSize: 13 },
+  const totalQuantity = books.reduce(
+    (sum, book) => sum + Number(book.quantity ?? 0),
+    0
+  );
 
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
-  modal: { background: '#fff', borderRadius: 16, padding: 28, width: 440, maxWidth: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' },
-  modalHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  modalTitle: { fontSize: 17, fontWeight: 700 },
-  closeBtn: { width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border2)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' },
-  formRow: { marginBottom: 14 },
-  formRow2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
-  label: { display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text3)', marginBottom: 6 },
-  input: { width: '100%', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: 'var(--text)', outline: 'none' },
-  modalFooter: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 },
-  btnCancel: { padding: '9px 18px', border: '1px solid var(--border2)', borderRadius: 8, background: '#fff', fontSize: 13, color: 'var(--text2)', cursor: 'pointer' },
-  btnSave: { padding: '9px 18px', border: 'none', borderRadius: 8, background: 'var(--ink)', color: '#fff', fontSize: 13, fontFamily: 'Syne, sans-serif', fontWeight: 600, cursor: 'pointer' },
-};
+  const handleSearch = value => {
+    setLocalSearch(value);
+    setSearch(value);
+  };
+
+  const handleDelete = async book => {
+    if (!window.confirm(`Supprimer «${book.title}» ?`)) return;
+
+    setDeleting(book.id);
+    try {
+      await bookService.delete(book.id);
+      refresh();
+    } catch (e) {
+      alert(e.response?.data?.message ?? 'Erreur');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const columns = [
+    {
+      key: 'title',
+      label: 'Livre',
+      render: (_, row) => (
+        <div className="flex items-center gap-3">
+          <BookCover book={row} />
+
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-900 text-sm truncate">
+              {row.title}
+            </p>
+            <p className="text-xs text-slate-500 truncate">
+              {row.author}
+            </p>
+            <p className="text-xs text-slate-400 font-mono mt-0.5 truncate">
+              {row.isbn}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'author',
+      label: 'Auteur',
+    },
+    {
+      key: 'category',
+      label: 'Catégorie',
+      render: value =>
+        value ? (
+          <span className="bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+            {value}
+          </span>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      key: 'available_quantity',
+      label: 'Disponible',
+      width: '120px',
+      render: value => <AvailBadge available={value ?? 0} />,
+    },
+    {
+      key: 'quantity',
+      label: 'Qté',
+      width: '60px',
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: '170px',
+      render: (_, row) => (
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="xs"
+            variant="secondary"
+            onClick={() => navigate(`/admin/books/${row.id}/edit`)}
+          >
+            Éditer
+          </Button>
+
+          <Button
+            size="xs"
+            variant="danger"
+            loading={deleting === row.id}
+            onClick={() => handleDelete(row)}
+          >
+            Supprimer
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="page-title">Livres</h2>
+          <p className="page-subtitle">
+            {meta.total} livre{meta.total !== 1 ? 's' : ''} dans la collection
+          </p>
+        </div>
+
+        <Button
+          onClick={() => navigate('/admin/books/create')}
+          icon={<PlusIcon />}
+        >
+          Ajouter un livre
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatMini label="Total livres" value={meta.total ?? 0} />
+        <StatMini label="Copies disponibles" value={totalAvailable} />
+        <StatMini label="Copies totales" value={totalQuantity} />
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-64 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+              <SearchIcon />
+
+              <input
+                value={search}
+                onChange={e => handleSearch(e.target.value)}
+                placeholder="Rechercher…"
+                className="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none"
+              />
+
+              {search && (
+                <button
+                  onClick={() => handleSearch('')}
+                  className="text-slate-400 hover:text-slate-600 text-lg leading-none"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            <select
+              value={params.category ?? ''}
+              onChange={e => setCategory(e.target.value)}
+              className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            >
+              {CATS.map(category => (
+                <option key={category} value={category}>
+                  {category || 'Toutes catégories'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-1">
+            <button
+              onClick={() => setView('table')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                view === 'table'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Table
+            </button>
+
+            <button
+              onClick={() => setView('grid')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                view === 'grid'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Cards
+            </button>
+          </div>
+        </div>
+
+        {view === 'table' ? (
+          <>
+            <Table
+              columns={columns}
+              data={books}
+              loading={loading}
+              empty="Aucun livre trouvé"
+            />
+
+            <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-xs text-slate-400">
+                Page {meta.current_page} sur {meta.last_page} — {meta.total} résultats
+              </span>
+
+              <Pagination
+                page={meta.current_page}
+                lastPage={meta.last_page}
+                onPageChange={setPage}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <svg className="animate-spin w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              </div>
+            ) : books.length === 0 ? (
+              <div className="py-20 text-center">
+                <p className="text-sm font-semibold text-slate-700">Aucun livre trouvé</p>
+                <p className="text-sm text-slate-400 mt-1">Essayez une autre recherche.</p>
+              </div>
+            ) : (
+              <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+                {books.map(book => (
+                  <div
+                    key={book.id}
+                    className="group bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all"
+                  >
+                    <BookCover book={book} size="card" />
+
+                    <div className="p-4 flex flex-col gap-3">
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 line-clamp-2">
+                          {book.title}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1 truncate">
+                          {book.author}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <AvailBadge available={book.available_quantity ?? 0} />
+                        <span className="text-xs text-slate-400">
+                          {book.category ?? '—'}
+                        </span>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          size="xs"
+                          variant="secondary"
+                          fullWidth
+                          onClick={() => navigate(`/admin/books/${book.id}/edit`)}
+                        >
+                          Éditer
+                        </Button>
+
+                        <Button
+                          size="xs"
+                          variant="danger"
+                          fullWidth
+                          loading={deleting === book.id}
+                          onClick={() => handleDelete(book)}
+                        >
+                          Supprimer
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-xs text-slate-400">
+                Page {meta.current_page} sur {meta.last_page} — {meta.total} résultats
+              </span>
+
+              <Pagination
+                page={meta.current_page}
+                lastPage={meta.last_page}
+                onPageChange={setPage}
+              />
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

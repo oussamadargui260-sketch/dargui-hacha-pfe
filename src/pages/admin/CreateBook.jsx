@@ -1,209 +1,296 @@
+// src/pages/admin/CreateBook.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, X, BookOpen, User, Tag, AlignLeft, Sparkles, Hash } from 'lucide-react';
+import { bookService } from '../../services/api';
+import Input from '../../components/Input';
+import Button from '../../components/Button';
 
-const CreateBook = () => {
+const CATS = [
+  'Fiction',
+  'Science Fiction',
+  'Histoire',
+  'Technologie',
+  'Développement',
+  'Philosophie',
+  'Biographie',
+  'Autre',
+];
+
+export default function CreateBook() {
   const navigate = useNavigate();
 
-  const [bookData, setBookData] = useState({
+  const [form, setForm] = useState({
+    isbn: '',
     title: '',
     author: '',
-    category: 'Fiction',
+    category: '',
+    published_date: '',
+    publisher: '',
+    language: 'Français',
+    pages: '',
+    rating: '',
+    cover_image: '',
+    quantity: 1,
     description: '',
-    stock: 1
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setBookData({ ...bookData, [name]: value });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const onChange = e => {
+    setForm(current => ({
+      ...current,
+      [e.target.name]: e.target.value,
+    }));
+
+    setErrors(current => ({
+      ...current,
+      [e.target.name]: '',
+    }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    const existingBooks = JSON.parse(localStorage.getItem('myLibrary')) || [];
-    const newBook = {
-      ...bookData,
-      id: Date.now(), 
-      status: 'Disponible'
-    };
-    const updatedBooks = [newBook, ...existingBooks];
-    localStorage.setItem('myLibrary', JSON.stringify(updatedBooks));
-    
-    // N-stakhdmou navigate deghya bla alert alert l-khayba
-    navigate('/admin/books');
+    setLoading(true);
+
+    try {
+      await bookService.create(form);
+      navigate('/admin/books');
+    } catch (err) {
+      setErrors(
+        err.response?.data?.errors ?? {
+          title: err.response?.data?.message ?? 'Erreur',
+        }
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="container-fluid py-2">
-      
-      {/* Header Section */}
-      <div className="d-flex justify-content-between align-items-center mb-5">
-        <div>
-          <div className="d-flex align-items-center gap-2 mb-1">
-            <div className="bg-indigo-soft p-2 rounded-3">
-              <Sparkles size={18} className="text-indigo" />
-            </div>
-            <h2 className="fw-bold m-0 text-dark" style={{ letterSpacing: '-1px' }}>Nouveau Livre</h2>
-          </div>
-          <p className="text-secondary small m-0">Enrichissez votre catalogue numérique en quelques secondes.</p>
-        </div>
-        <button 
-          onClick={() => navigate('/admin/books')} 
-          className="btn btn-light d-flex align-items-center gap-2 rounded-3 px-3 border-0 text-secondary fw-bold small shadow-none"
+    <div className="flex flex-col gap-5 max-w-5xl">
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition"
         >
-          <X size={18} /> ANNULER
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
         </button>
+
+        <div>
+          <h2 className="page-title">Ajouter un livre</h2>
+          <p className="page-subtitle">
+            Créez une nouvelle fiche livre avec image et détails.
+          </p>
+        </div>
       </div>
 
-      <div className="row g-4">
-        {/* Form Column */}
-        <div className="col-lg-8">
-          <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-            <div className="card-body p-4 p-md-5">
-              <form onSubmit={handleSubmit}>
-                
-                {/* Title Input */}
-                <div className="mb-4">
-                  <label className="form-label fw-bold small text-slate-600 mb-2 uppercase tracking-wider">
-                    <BookOpen size={14} className="me-2" /> Titre du Livre
-                  </label>
-                  <input 
-                    type="text" 
-                    name="title"
-                    className="form-control form-control-lg bg-light border-0 p-3 rounded-3 fs-6 shadow-none fw-medium" 
-                    placeholder="Ex: L'Alchimiste" 
-                    required
-                    onChange={handleChange} 
-                    value={bookData.title}
-                  />
-                </div>
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-4">
+            <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-3">
+              Informations principales
+            </h3>
 
-                <div className="row">
-                  {/* Author */}
-                  <div className="col-md-6 mb-4">
-                    <label className="form-label fw-bold small text-slate-600 mb-2 uppercase tracking-wider">
-                      <User size={14} className="me-2" /> Auteur
-                    </label>
-                    <input 
-                      type="text" 
-                      name="author"
-                      className="form-control form-control-lg bg-light border-0 p-3 rounded-3 fs-6 shadow-none fw-medium" 
-                      placeholder="Ex: Paulo Coelho" 
-                      required
-                      onChange={handleChange}
-                      value={bookData.author}
-                    />
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="ISBN"
+                name="isbn"
+                value={form.isbn}
+                onChange={onChange}
+                error={errors.isbn}
+                placeholder="9780441013593"
+                required
+              />
 
-                  {/* Category */}
-                  <div className="col-md-6 mb-4">
-                    <label className="form-label fw-bold small text-slate-600 mb-2 uppercase tracking-wider">
-                      <Tag size={14} className="me-2" /> Catégorie
-                    </label>
-                    <select 
-                      name="category"
-                      className="form-select form-select-lg bg-light border-0 p-3 rounded-3 fs-6 shadow-none fw-medium cursor-pointer"
-                      onChange={handleChange}
-                      value={bookData.category}
-                    >
-                      <option value="Fiction">Fiction</option>
-                      <option value="Science">Science</option>
-                      <option value="Histoire">Histoire</option>
-                      <option value="Technologie">Technologie</option>
-                      <option value="Droit">Droit</option>
-                    </select>
-                  </div>
-                </div>
+              <Input
+                label="Date de publication"
+                name="published_date"
+                type="date"
+                value={form.published_date}
+                onChange={onChange}
+                error={errors.published_date}
+              />
+            </div>
 
-                <div className="row">
-                   {/* Stock */}
-                   <div className="col-md-12 mb-4">
-                    <label className="form-label fw-bold small text-slate-600 mb-2 uppercase tracking-wider">
-                      <Hash size={14} className="me-2" /> Nombre d'exemplaires
-                    </label>
-                    <input 
-                      type="number" 
-                      name="stock"
-                      min="1"
-                      className="form-control form-control-lg bg-light border-0 p-3 rounded-3 fs-6 shadow-none fw-medium w-25" 
-                      required
-                      onChange={handleChange}
-                      value={bookData.stock}
-                    />
-                  </div>
-                </div>
+            <Input
+              label="Titre"
+              name="title"
+              value={form.title}
+              onChange={onChange}
+              error={errors.title}
+              placeholder="Ex: Dune"
+              required
+            />
 
-                {/* Description */}
-                <div className="mb-5">
-                  <label className="form-label fw-bold small text-slate-600 mb-2 uppercase tracking-wider">
-                    <AlignLeft size={14} className="me-2" /> Description / Résumé
-                  </label>
-                  <textarea 
-                    name="description"
-                    className="form-control bg-light border-0 p-3 rounded-3 fs-6 shadow-none fw-medium" 
-                    rows="4"
-                    placeholder="De quoi parle ce livre ?"
-                    onChange={handleChange}
-                    value={bookData.description}
-                  ></textarea>
-                </div>
+            <Input
+              label="Auteur"
+              name="author"
+              value={form.author}
+              onChange={onChange}
+              error={errors.author}
+              placeholder="Ex: Frank Herbert"
+              required
+            />
 
-                {/* Action Button */}
-                <button 
-                  type="submit" 
-                  className="btn btn-primary w-100 py-3 rounded-3 fw-bold border-0 shadow-indigo d-flex align-items-center justify-content-center gap-2"
-                  style={{ background: '#6366f1' }}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Catégorie
+                </label>
+
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={onChange}
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 >
-                  <Save size={20} /> Enregistrer dans la Bibliothèque
-                </button>
-              </form>
+                  <option value="">Sélectionner…</option>
+                  {CATS.map(category => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <Input
+                label="Quantité"
+                name="quantity"
+                type="number"
+                min={1}
+                value={form.quantity}
+                onChange={onChange}
+                error={errors.quantity}
+                required
+              />
+            </div>
+
+            <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-3 pt-3">
+              Détails avancés
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Éditeur"
+                name="publisher"
+                value={form.publisher}
+                onChange={onChange}
+                placeholder="Ex: Ace Books"
+              />
+
+              <Input
+                label="Langue"
+                name="language"
+                value={form.language}
+                onChange={onChange}
+                placeholder="Français"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Pages"
+                name="pages"
+                type="number"
+                value={form.pages}
+                onChange={onChange}
+                placeholder="412"
+              />
+
+              <Input
+                label="Note"
+                name="rating"
+                type="number"
+                min="0"
+                max="5"
+                step="0.1"
+                value={form.rating}
+                onChange={onChange}
+                placeholder="4.8"
+              />
+            </div>
+
+            <Input
+              label="Image de couverture URL"
+              name="cover_image"
+              value={form.cover_image}
+              onChange={onChange}
+              placeholder="https://covers.openlibrary.org/b/isbn/9780441013593-L.jpg"
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Description
+              </label>
+
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={onChange}
+                rows={5}
+                placeholder="Résumé du livre…"
+                className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 resize-y outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+
+              {errors.description && (
+                <p className="text-xs text-red-500">{errors.description}</p>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" loading={loading} size="lg">
+                Ajouter le livre
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="lg"
+                type="button"
+                onClick={() => navigate(-1)}
+              >
+                Annuler
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 h-fit">
+            <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-3 mb-4">
+              Aperçu couverture
+            </h3>
+
+            <div className="aspect-[2/3] rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
+              {form.cover_image ? (
+                <img
+                  src={form.cover_image}
+                  alt={form.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center p-5">
+                  <p className="text-sm font-bold text-slate-600">
+                    {form.title || 'Titre du livre'}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-2">
+                    {form.author || 'Auteur'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <p className="text-xs font-bold text-slate-400 uppercase">
+                Conseil
+              </p>
+              <p className="text-sm text-slate-600 mt-2 leading-6">
+                Tu peux utiliser les couvertures OpenLibrary avec un ISBN.
+              </p>
             </div>
           </div>
         </div>
-
-        {/* Info Column (Preview Sidebar) */}
-        <div className="col-lg-4">
-            <div className="card border-0 rounded-4 p-4 text-white shadow-indigo h-100" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)' }}>
-                <h5 className="fw-bold mb-4">Guide de Saisie</h5>
-                <ul className="list-unstyled d-flex flex-column gap-3 small opacity-90">
-                    <li className="d-flex gap-2">
-                        <div className="bg-white bg-opacity-20 rounded p-1 h-fit"><Sparkles size={14}/></div>
-                        <span>Utilisez des titres officiels pour une meilleure recherche.</span>
-                    </li>
-                    <li className="d-flex gap-2">
-                        <div className="bg-white bg-opacity-20 rounded p-1 h-fit"><Sparkles size={14}/></div>
-                        <span>Vérifiez l'auteur pour éviter les doublons.</span>
-                    </li>
-                    <li className="d-flex gap-2">
-                        <div className="bg-white bg-opacity-20 rounded p-1 h-fit"><Sparkles size={14}/></div>
-                        <span>La catégorie aide à l'organisation automatique.</span>
-                    </li>
-                </ul>
-                <div className="mt-auto pt-5">
-                    <div className="p-3 bg-white bg-opacity-10 rounded-3 border border-white border-opacity-10">
-                        <p className="small mb-0 opacity-75 italic">"Un bon catalogue est le cœur d'une bibliothèque efficace."</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-      </div>
-
-      <style>
-        {`
-          .bg-indigo-soft { background-color: rgba(99, 102, 241, 0.1); }
-          .text-indigo { color: #6366f1; }
-          .text-slate-600 { color: #475569; }
-          .shadow-indigo { box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4) !important; }
-          .h-fit { height: fit-content; }
-          .uppercase { text-transform: uppercase; }
-          input:focus, select:focus, textarea:focus {
-             background-color: #f1f5f9 !important;
-             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
-          }
-        `}
-      </style>
+      </form>
     </div>
   );
-};
-
-export default CreateBook;
+}

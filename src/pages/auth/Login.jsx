@@ -1,128 +1,230 @@
+// src/pages/auth/Login.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import Input from '../../components/Input';
+import Button from '../../components/Button';
 
 export default function Login() {
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [showPwd, setShowPwd]   = useState(false);
-  const [error, setError]       = useState('');
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  function handleSubmit(e) {
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+
+  const onChange = e => {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    setError('');
+  };
+
+  const fillDemo = role => {
+    setForm({
+      email: role === 'admin' ? 'admin@library.com' : 'user@library.com',
+      password: 'password',
+    });
+    setError('');
+  };
+
+  const handleSubmit = async e => {
     e.preventDefault();
-    if (!email || !password) { setError('Veuillez remplir tous les champs.'); return; }
-    // Demo: any credentials work
-    navigate('/admin/dashboard');
-  }
+    setLoading(true);
+    setError('');
+
+    try {
+      const user = await login(form.email, form.password);
+      navigate(user.role === 'admin' ? '/admin/dashboard' : '/library', {
+        replace: true,
+      });
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Email ou mot de passe incorrect.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div style={s.page}>
-      {/* Left panel */}
-      <div style={s.left}>
-        <div style={s.leftContent}>
-          <div style={s.logoMark}>
-            <div style={s.logoIcon}><BookOpen size={24} color="#0D0D0F" strokeWidth={2} /></div>
-            <span style={s.logoName}>BiblioTech</span>
+    <div className="min-h-screen bg-slate-50 flex">
+      <div className="hidden lg:flex flex-1 bg-slate-900 text-white p-10 flex-col justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center">
+            <BookIcon />
           </div>
-          <h1 style={s.headline}>La bibliothèque<br />à portée de main.</h1>
-          <p style={s.tagline}>Gérez vos livres, membres et prêts depuis un seul tableau de bord élégant.</p>
-          <div style={s.stats}>
-            <div style={s.statItem}><div style={s.statNum}>1 248</div><div style={s.statLbl}>Livres</div></div>
-            <div style={s.statItem}><div style={s.statNum}>342</div><div style={s.statLbl}>Membres</div></div>
-            <div style={s.statItem}><div style={s.statNum}>87</div><div style={s.statLbl}>Prêts actifs</div></div>
+          <div>
+            <h1 className="text-lg font-extrabold">Librarium</h1>
+            <p className="text-xs text-slate-400">Library Management System</p>
           </div>
         </div>
+
+        <div className="max-w-xl">
+          <span className="inline-flex px-3 py-1 rounded-full bg-blue-600/20 text-blue-300 border border-blue-500/20 text-xs font-bold mb-6">
+            Modern SaaS Dashboard
+          </span>
+
+          <h2 className="text-5xl font-black leading-tight">
+            Gérez vos livres, emprunts et utilisateurs simplement.
+          </h2>
+
+          <p className="text-slate-400 text-lg leading-8 mt-5">
+            Une interface moderne pour administrer une bibliothèque complète avec Laravel, React et Tailwind CSS.
+          </p>
+
+          <div className="grid grid-cols-3 gap-4 mt-10">
+            <Stat value="Dashboard" label="Analytics" />
+            <Stat value="CRUD" label="Books & Users" />
+            <Stat value="Dark" label="Mode" />
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-500">
+          © 2026 Librarium — OFPPT DEV FS
+        </p>
       </div>
 
-      {/* Right panel */}
-      <div style={s.right}>
-        <div style={s.formBox}>
-          <div style={s.formHeader}>
-            <h2 style={s.formTitle}>Connexion</h2>
-            <p style={s.formSub}>Bienvenue sur votre espace administrateur.</p>
+      <div className="w-full lg:w-[520px] flex items-center justify-center p-5">
+        <div className="w-full max-w-md">
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-white">
+              <BookIcon />
+            </div>
+            <div>
+              <h1 className="text-lg font-extrabold text-slate-950">Librarium</h1>
+              <p className="text-xs text-slate-400">Library Management System</p>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div style={s.field}>
-              <label style={s.label}>Email</label>
-              <input
-                style={s.input}
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="admin@bibliotech.ma"
-                autoComplete="email"
-              />
+          <div className="bg-white border border-slate-200 rounded-3xl shadow-xl p-8">
+            <div className="mb-7">
+              <h2 className="text-3xl font-black text-slate-950">
+                Bon retour 👋
+              </h2>
+              <p className="text-sm text-slate-500 mt-2">
+                Connectez-vous à votre espace.
+              </p>
             </div>
 
-            <div style={s.field}>
-              <label style={s.label}>Mot de passe</label>
-              <div style={s.pwdWrap}>
-                <input
-                  style={{ ...s.input, paddingRight: 42 }}
-                  type={showPwd ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  style={s.eyeBtn}
-                  onClick={() => setShowPwd(!showPwd)}
-                  aria-label={showPwd ? 'Masquer' : 'Afficher'}
-                >
-                  {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-4 py-3 mb-5 text-sm font-semibold">
+                ⚠ {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2 mb-5">
+              <button
+                type="button"
+                onClick={() => fillDemo('admin')}
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left hover:bg-blue-50 hover:border-blue-200 transition"
+              >
+                <p className="text-xs font-black text-slate-900">Admin Demo</p>
+                <p className="text-[11px] text-slate-400 mt-1 truncate">
+                  admin@library.com
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fillDemo('user')}
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left hover:bg-blue-50 hover:border-blue-200 transition"
+              >
+                <p className="text-xs font-black text-slate-900">User Demo</p>
+                <p className="text-[11px] text-slate-400 mt-1 truncate">
+                  user@library.com
+                </p>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <Input
+                label="Email"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={onChange}
+                placeholder="admin@library.com"
+                required
+                autoFocus
+                icon={<EmailIcon />}
+              />
+
+              <Input
+                label="Mot de passe"
+                name="password"
+                type={showPw ? 'text' : 'password'}
+                value={form.password}
+                onChange={onChange}
+                placeholder="••••••••"
+                required
+                icon={<LockIcon />}
+                iconRight={
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(v => !v)}
+                    className="text-xs font-bold text-slate-400 hover:text-slate-700"
+                  >
+                    {showPw ? 'Masquer' : 'Voir'}
+                  </button>
+                }
+              />
+
+              <div className="flex items-center justify-between text-xs">
+                <label className="flex items-center gap-2 text-slate-600 cursor-pointer">
+                  <input type="checkbox" className="rounded border-slate-300 text-blue-600" />
+                  Se souvenir de moi
+                </label>
+
+                <button type="button" className="text-blue-600 font-bold hover:text-blue-700">
+                  Mot de passe oublié ?
                 </button>
               </div>
-            </div>
 
-            {error && <p style={s.error}>{error}</p>}
+              <Button type="submit" fullWidth loading={loading} size="lg" className="mt-2">
+                Se connecter
+              </Button>
+            </form>
 
-            <button type="submit" style={s.submitBtn}>
-              Se connecter
-            </button>
-          </form>
+            <p className="text-center text-sm text-slate-500 mt-6">
+              Pas encore de compte ?{' '}
+              <Link to="/register" className="text-blue-600 font-black hover:text-blue-700">
+                Créer un compte
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-const s = {
-  page: { display: 'flex', height: '100vh', fontFamily: "'DM Sans', sans-serif" },
+function Stat({ value, label }) {
+  return (
+    <div className="bg-white/10 border border-white/10 rounded-2xl p-4">
+      <p className="text-lg font-black">{value}</p>
+      <p className="text-xs text-slate-400 mt-1">{label}</p>
+    </div>
+  );
+}
 
-  left: {
-    flex: 1,
-    background: 'var(--ink)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 60,
-  },
-  leftContent: { maxWidth: 400 },
-  logoMark: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 56 },
-  logoIcon: { width: 44, height: 44, background: 'var(--gold)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  logoName: { fontFamily: 'Syne, sans-serif', fontSize: 20, fontWeight: 700, color: '#fff' },
-  headline: { fontFamily: 'Syne, sans-serif', fontSize: 36, fontWeight: 700, color: '#fff', lineHeight: 1.2, marginBottom: 16 },
-  tagline: { fontSize: 15, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, marginBottom: 48 },
-  stats: { display: 'flex', gap: 32 },
-  statItem: {},
-  statNum: { fontFamily: 'Syne, sans-serif', fontSize: 24, fontWeight: 700, color: 'var(--gold)' },
-  statLbl: { fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+function BookIcon() {
+  return (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+  );
+}
 
-  right: { width: 460, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, background: 'var(--surface)' },
-  formBox: { width: '100%', maxWidth: 360 },
-  formHeader: { marginBottom: 32 },
-  formTitle: { fontFamily: 'Syne, sans-serif', fontSize: 24, fontWeight: 700, marginBottom: 6 },
-  formSub: { fontSize: 13, color: 'var(--text3)' },
+function EmailIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+    </svg>
+  );
+}
 
-  field: { marginBottom: 18 },
-  label: { display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text3)', marginBottom: 8 },
-  input: { width: '100%', background: '#fff', border: '1px solid var(--border2)', borderRadius: 10, padding: '11px 14px', fontSize: 14, color: 'var(--text)', outline: 'none', transition: 'border 0.15s' },
-  pwdWrap: { position: 'relative' },
-  eyeBtn: { position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', color: 'var(--text3)', cursor: 'pointer', display: 'flex', alignItems: 'center' },
-  error: { fontSize: 12, color: 'var(--rose)', marginBottom: 12 },
-  submitBtn: { width: '100%', background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 10, padding: '13px', fontSize: 14, fontFamily: 'Syne, sans-serif', fontWeight: 600, letterSpacing: '0.04em', cursor: 'pointer', marginTop: 8 },
-};
+function LockIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 002 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    </svg>
+  );
+}

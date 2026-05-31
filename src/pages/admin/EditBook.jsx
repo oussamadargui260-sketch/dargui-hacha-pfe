@@ -1,144 +1,334 @@
+// src/pages/admin/EditBook.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft, BookOpen, CheckCircle } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useBook } from '../../hooks/useBooks';
+import { bookService } from '../../services/api';
+import Input from '../../components/Input';
+import Button from '../../components/Button';
 
-const EditBook = () => {
-  const { id } = useParams(); 
+const CATS = [
+  'Fiction',
+  'Science Fiction',
+  'Histoire',
+  'Technologie',
+  'Développement',
+  'Philosophie',
+  'Biographie',
+  'Autre',
+];
+
+function BackIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+export default function EditBook() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  
-  const [bookData, setBookData] = useState({
+  const { book, loading: fetching } = useBook(id);
+
+  const [form, setForm] = useState({
     title: '',
     author: '',
     category: '',
-    stock: 1,
-    status: 'Available'
+    published_date: '',
+    publisher: '',
+    language: '',
+    pages: '',
+    rating: '',
+    cover_image: '',
+    quantity: 1,
+    description: '',
   });
 
- 
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    const savedBooks = JSON.parse(localStorage.getItem('myLibrary')) || [];
-    const bookToEdit = savedBooks.find(b => Number(b.id) === Number(id));
-    
-    if (bookToEdit) {
-      setBookData(bookToEdit);
-    } else {
-      alert("Book not found!");
-      navigate('/admin/books');
+    if (book) {
+      setForm({
+        title: book.title ?? '',
+        author: book.author ?? '',
+        category: book.category ?? '',
+        published_date: book.published_date ?? '',
+        publisher: book.publisher ?? '',
+        language: book.language ?? '',
+        pages: book.pages ?? '',
+        rating: book.rating ?? '',
+        cover_image: book.cover_image ?? '',
+        quantity: book.quantity ?? 1,
+        description: book.description ?? '',
+      });
     }
-  }, [id, navigate]);
+  }, [book]);
 
- 
-  const handleUpdate = (e) => {
-    e.preventDefault();
-    
-    const savedBooks = JSON.parse(localStorage.getItem('myLibrary')) || [];
-    
-   
-    const updatedBooks = savedBooks.map(b => 
-      Number(b.id) === Number(id) ? { ...bookData } : b
-    );
+  const onChange = e => {
+    setForm(current => ({
+      ...current,
+      [e.target.name]: e.target.value,
+    }));
 
-    localStorage.setItem('myLibrary', JSON.stringify(updatedBooks));
-    alert("Book updated successfully!");
-    navigate('/admin/books');
+    setErrors(current => ({
+      ...current,
+      [e.target.name]: '',
+    }));
   };
 
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await bookService.update(id, form);
+      navigate('/admin/books');
+    } catch (err) {
+      setErrors(
+        err.response?.data?.errors ?? {
+          title: err.response?.data?.message ?? 'Erreur',
+        }
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (fetching) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <svg className="animate-spin w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+        </svg>
+      </div>
+    );
+  }
+
   return (
-    <div className="container-fluid py-4">
-   
-      <div className="d-flex align-items-center gap-3 mb-4">
-        <button onClick={() => navigate('/admin/books')} className="btn btn-light rounded-circle p-2 shadow-sm">
-          <ArrowLeft size={20} />
+    <div className="flex flex-col gap-5 max-w-5xl">
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition"
+        >
+          <BackIcon />
         </button>
+
         <div>
-          <h2 className="fw-bold h4 m-0">EDIT BOOK</h2>
-          <p className="text-muted small">Update book information in the catalog.</p>
+          <h2 className="page-title">Modifier le livre</h2>
+          <p className="page-subtitle">«{book?.title}»</p>
         </div>
       </div>
 
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          <div className="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
-            <form onSubmit={handleUpdate}>
-              <div className="mb-4">
-                <label className="form-label small fw-bold text-muted text-uppercase">Book Title</label>
-                <div className="input-group">
-                  <span className="input-group-text border-0 bg-light"><BookOpen size={18} /></span>
-                  <input 
-                    type="text" 
-                    className="form-control border-0 bg-light p-3" 
-                    value={bookData.title}
-                    onChange={(e) => setBookData({...bookData, title: e.target.value})}
-                    required 
-                  />
-                </div>
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-4">
+            <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-3">
+              Informations générales
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  ISBN non modifiable
+                </label>
+
+                <input
+                  value={book?.isbn ?? ''}
+                  disabled
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-slate-50 text-slate-400 cursor-not-allowed outline-none"
+                />
               </div>
 
-              <div className="row mb-4">
-                <div className="col-md-6">
-                  <label className="form-label small fw-bold text-muted text-uppercase">Author</label>
-                  <input 
-                    type="text" 
-                    className="form-control border-0 bg-light p-3 rounded-3" 
-                    value={bookData.author}
-                    onChange={(e) => setBookData({...bookData, author: e.target.value})}
-                    required 
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label small fw-bold text-muted text-uppercase">Category</label>
-                  <select 
-                    className="form-select border-0 bg-light p-3 rounded-3"
-                    value={bookData.category}
-                    onChange={(e) => setBookData({...bookData, category: e.target.value})}
-                  >
-                    <option value="Fiction">Fiction</option>
-                    <option value="Technology">Technology</option>
-                    <option value="History">History</option>
-                    <option value="Science">Science</option>
-                  </select>
-                </div>
-              </div>
+              <Input
+                label="Date de publication"
+                name="published_date"
+                type="date"
+                value={form.published_date}
+                onChange={onChange}
+              />
+            </div>
 
-              <div className="row mb-5">
-                <div className="col-md-6">
-                  <label className="form-label small fw-bold text-muted text-uppercase">Stock (Copies)</label>
-                  <input 
-                    type="number" 
-                    className="form-control border-0 bg-light p-3 rounded-3" 
-                    value={bookData.stock}
-                    onChange={(e) => setBookData({...bookData, stock: e.target.value})}
-                    min="1"
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label small fw-bold text-muted text-uppercase">Status</label>
-                  <select 
-                    className="form-select border-0 bg-light p-3 rounded-3"
-                    value={bookData.status}
-                    onChange={(e) => setBookData({...bookData, status: e.target.value})}
-                  >
-                    <option value="Available">Available</option>
-                    <option value="Borrowed">Borrowed</option>
-                    <option value="Under Maintenance">Under Maintenance</option>
-                  </select>
-                </div>
-              </div>
+            <Input
+              label="Titre"
+              name="title"
+              value={form.title}
+              onChange={onChange}
+              error={errors.title}
+              required
+            />
 
-              <div className="d-flex gap-2">
-                <button type="submit" className="btn btn-primary px-5 py-3 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2">
-                  <Save size={20} /> Save Changes
-                </button>
-                <button type="button" onClick={() => navigate('/admin/books')} className="btn btn-light px-4 py-3 rounded-3 fw-bold">
-                  Cancel
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Auteur"
+                name="author"
+                value={form.author}
+                onChange={onChange}
+                error={errors.author}
+                required
+              />
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Catégorie
+                </label>
+
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={onChange}
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                >
+                  <option value="">Sélectionner…</option>
+                  {CATS.map(category => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+
+                {errors.category && (
+                  <p className="text-xs text-red-500">{errors.category}</p>
+                )}
               </div>
-            </form>
+            </div>
+
+            <Input
+              label="Quantité"
+              name="quantity"
+              type="number"
+              min={1}
+              value={form.quantity}
+              onChange={onChange}
+              error={errors.quantity}
+              required
+            />
+
+            <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-3 pt-3">
+              Détails avancés
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Éditeur"
+                name="publisher"
+                value={form.publisher}
+                onChange={onChange}
+                placeholder="Ex: Ace Books"
+              />
+
+              <Input
+                label="Langue"
+                name="language"
+                value={form.language}
+                onChange={onChange}
+                placeholder="Français"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Pages"
+                name="pages"
+                type="number"
+                value={form.pages}
+                onChange={onChange}
+                placeholder="412"
+              />
+
+              <Input
+                label="Note"
+                name="rating"
+                type="number"
+                min="0"
+                max="5"
+                step="0.1"
+                value={form.rating}
+                onChange={onChange}
+                placeholder="4.8"
+              />
+            </div>
+
+            <Input
+              label="Image URL"
+              name="cover_image"
+              value={form.cover_image}
+              onChange={onChange}
+              placeholder="https://covers.openlibrary.org/b/isbn/9780441013593-L.jpg"
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Description
+              </label>
+
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={onChange}
+                rows={5}
+                placeholder="Description…"
+                className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 resize-y outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-300 transition"
+              />
+
+              {errors.description && (
+                <p className="text-xs text-red-500">{errors.description}</p>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" loading={loading} size="lg">
+                Enregistrer
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="lg"
+                type="button"
+                onClick={() => navigate(-1)}
+              >
+                Annuler
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 h-fit">
+            <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-3 mb-4">
+              Aperçu couverture
+            </h3>
+
+            <div className="aspect-[2/3] rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+              {form.cover_image ? (
+                <img
+                  src={form.cover_image}
+                  alt={form.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center p-5">
+                  <p className="text-sm font-bold text-slate-600">
+                    {form.title || 'Titre du livre'}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-2">
+                    {form.author || 'Auteur'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <p className="text-xs font-bold text-slate-400 uppercase">
+                Aperçu
+              </p>
+              <p className="text-sm text-slate-600 mt-2 leading-6">
+                L’image et les détails seront visibles dans la page Book Details.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </form>
     </div>
   );
-};
-
-export default EditBook;
+}

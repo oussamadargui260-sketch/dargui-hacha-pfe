@@ -1,197 +1,196 @@
+// src/pages/admin/Users.jsx
 import React, { useState } from 'react';
-import { Search, Edit2, Trash2, Plus, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useUsers } from '../../hooks/useUsers';
+import { useAuth } from '../../contexts/AuthContext';
+import Table, { Pagination } from '../../components/Table';
+import { RoleBadge } from '../../components/Badge';
+import Button from '../../components/Button';
 
-const INITIAL_USERS = [
-  { id: 1, initials: 'OD', bg: '#FFF8E1', color: '#C9A84C', name: 'Oussama Dargui',  email: 'o.dargui@biblio.ma',   role: 'Admin',  status: 'Actif',  since: 'Jan 2024' },
-  { id: 2, initials: 'SA', bg: '#E8F5E9', color: '#1A7A6B', name: 'Sara Alami',       email: 's.alami@gmail.com',    role: 'Membre', status: 'Actif',  since: 'Jan 2024' },
-  { id: 3, initials: 'KB', bg: '#F3E5F5', color: '#7C6EE8', name: 'Karim Benali',     email: 'k.benali@hotmail.com', role: 'Membre', status: 'Actif',  since: 'Mar 2024' },
-  { id: 4, initials: 'NE', bg: '#FCE4EC', color: '#C0404A', name: 'Nadia El Fassi',   email: 'n.elfassi@gmail.com',  role: 'Membre', status: 'Retard', since: 'Fév 2024' },
-  { id: 5, initials: 'YM', bg: '#E1F5FE', color: '#1976D2', name: 'Youssef Mansouri', email: 'y.mansouri@edu.ma',    role: 'Membre', status: 'Actif',  since: 'Avr 2024' },
-  { id: 6, initials: 'IT', bg: '#E8F5E9', color: '#1A7A6B', name: 'Imane Tazi',       email: 'i.tazi@gmail.com',     role: 'Membre', status: 'Actif',  since: 'Mai 2024' },
-];
+const fmt = d => (d ? new Date(d).toLocaleDateString('fr-FR') : '—');
 
-const STATUS_STYLE = {
-  Actif:  { background: 'var(--teal3)', color: 'var(--teal)' },
-  Retard: { background: 'var(--rose3)', color: 'var(--rose)' },
-  Inactif:{ background: 'var(--surface2)', color: 'var(--text3)' },
-};
-
-const EMPTY_FORM = { name: '', email: '', role: 'Membre' };
-
-export default function Users() {
-  const [users, setUsers]   = useState(INITIAL_USERS);
-  const [search, setSearch] = useState('');
-  const [role, setRole]     = useState('Tous');
-  const [modal, setModal]   = useState(false);
-  const [form, setForm]     = useState(EMPTY_FORM);
-  const [editId, setEditId] = useState(null);
-
-  const filtered = users.filter(u => {
-    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) ||
-                        u.email.toLowerCase().includes(search.toLowerCase());
-    const matchRole   = role === 'Tous' || u.role === role;
-    return matchSearch && matchRole;
-  });
-
-  function openAdd()       { setForm(EMPTY_FORM); setEditId(null); setModal(true); }
-  function openEdit(user)  { setForm({ name: user.name, email: user.email, role: user.role }); setEditId(user.id); setModal(true); }
-  function closeModal()    { setModal(false); }
-
-  function handleSave() {
-    if (!form.name.trim() || !form.email.trim()) return;
-    if (editId) {
-      setUsers(users.map(u => u.id === editId ? { ...u, ...form } : u));
-    } else {
-      const initials = form.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-      const bgs = ['#E8F5E9','#E3F2FD','#F3E5F5','#FFF8E1','#FCE4EC'];
-      const colors = ['#1A7A6B','#1976D2','#7C6EE8','#C9A84C','#C0404A'];
-      const idx = users.length % 5;
-      setUsers([...users, { id: Date.now(), initials, bg: bgs[idx], color: colors[idx], status: 'Actif', since: 'Mai 2026', ...form }]);
-    }
-    closeModal();
-  }
-
-  function handleDelete(id) {
-    if (window.confirm('Supprimer cet utilisateur ?')) setUsers(users.filter(u => u.id !== id));
-  }
-
+function UserPlusIcon() {
   return (
-    <div>
-      <div style={s.pageHeader}>
-        <h1 style={s.pageTitle}>Gestion Utilisateurs</h1>
-        <p style={s.pageSubtitle}>Membres inscrits et accès à la bibliothèque.</p>
-      </div>
-
-      {/* FILTERS */}
-      <div style={s.filterBar}>
-        <div style={s.filterSearch}>
-          <Search size={14} color="var(--text3)" />
-          <input
-            style={s.filterInput}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Nom, email..."
-          />
-        </div>
-        <select style={s.select} value={role} onChange={e => setRole(e.target.value)}>
-          <option>Tous</option><option>Admin</option><option>Membre</option>
-        </select>
-        <div style={s.count}>{filtered.length} utilisateur{filtered.length > 1 ? 's' : ''}</div>
-        <button style={s.addBtn} onClick={openAdd}>
-          <Plus size={14} /> Ajouter
-        </button>
-      </div>
-
-      {/* TABLE */}
-      <div style={s.table}>
-        <div style={s.tableHead}>
-          <span>Utilisateur</span>
-          <span>Email</span>
-          <span>Rôle</span>
-          <span>Membre depuis</span>
-          <span>Statut</span>
-          <span>Actions</span>
-        </div>
-        {filtered.map((user, i) => {
-          const st = STATUS_STYLE[user.status] || STATUS_STYLE.Actif;
-          return (
-            <div key={user.id} style={{ ...s.tableRow, borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none' }}>
-              <div style={s.userCell}>
-                <div style={{ ...s.userAv, background: user.bg, color: user.color }}>{user.initials}</div>
-                <div>
-                  <div style={s.userName}>{user.name}</div>
-                  <div style={s.userSince}>Membre depuis {user.since}</div>
-                </div>
-              </div>
-              <div style={s.cellText}>{user.email}</div>
-              <div>
-                <span style={{
-                  ...s.badge,
-                  background: user.role === 'Admin' ? '#FFF8E1' : 'var(--teal3)',
-                  color:      user.role === 'Admin' ? 'var(--gold)' : 'var(--teal)',
-                }}>
-                  {user.role}
-                </span>
-              </div>
-              <div style={s.cellText}>{user.since}</div>
-              <div>
-                <span style={{ ...s.badge, background: st.background, color: st.color }}>{user.status}</span>
-              </div>
-              <div style={s.rowActions}>
-                <button style={s.rowBtn} onClick={() => openEdit(user)} aria-label="Modifier"><Edit2 size={13} /></button>
-                <button style={{ ...s.rowBtn, color: 'var(--rose)' }} onClick={() => handleDelete(user.id)} aria-label="Supprimer"><Trash2 size={13} /></button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* MODAL */}
-      {modal && (
-        <div style={s.overlay} onClick={e => e.target === e.currentTarget && closeModal()}>
-          <div style={s.modal}>
-            <div style={s.modalHeader}>
-              <h2 style={s.modalTitle}>{editId ? 'Modifier utilisateur' : 'Ajouter un utilisateur'}</h2>
-              <button style={s.closeBtn} onClick={closeModal}><X size={18} /></button>
-            </div>
-            <div style={s.formRow}>
-              <label style={s.label}>Nom complet *</label>
-              <input style={s.input} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Prénom Nom" />
-            </div>
-            <div style={s.formRow}>
-              <label style={s.label}>Email *</label>
-              <input style={s.input} type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" />
-            </div>
-            <div style={s.formRow}>
-              <label style={s.label}>Rôle</label>
-              <select style={s.input} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
-                <option>Membre</option><option>Admin</option>
-              </select>
-            </div>
-            <div style={s.modalFooter}>
-              <button style={s.btnCancel} onClick={closeModal}>Annuler</button>
-              <button style={s.btnSave} onClick={handleSave}>Enregistrer</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+    </svg>
   );
 }
 
-const s = {
-  pageHeader: { marginBottom: 24 },
-  pageTitle:  { fontSize: 22, fontWeight: 700, marginBottom: 4 },
-  pageSubtitle: { color: 'var(--text3)', fontSize: 13 },
+function SearchIcon() {
+  return (
+    <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+    </svg>
+  );
+}
 
-  filterBar: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' },
-  filterSearch: { display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1px solid var(--border2)', borderRadius: 8, padding: '8px 14px', flex: 1, maxWidth: 280 },
-  filterInput: { border: 'none', background: 'transparent', fontSize: 13, outline: 'none', flex: 1, color: 'var(--text)' },
-  select: { background: '#fff', border: '1px solid var(--border2)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: 'var(--text)', outline: 'none' },
-  count: { fontSize: 12, color: 'var(--text3)' },
-  addBtn: { background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 12, fontFamily: 'Syne, sans-serif', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' },
+export default function Users() {
+  const navigate = useNavigate();
+  const { user: me } = useAuth();
+  const { users, meta, loading, setPage, setSearch, deleteUser } = useUsers();
 
-  table: { background: '#fff', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' },
-  tableHead: { display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr 90px', padding: '12px 20px', background: 'var(--surface)', borderBottom: '1px solid var(--border)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text3)', gap: 12 },
-  tableRow: { display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr 90px', padding: '14px 20px', alignItems: 'center', gap: 12, transition: 'background 0.1s' },
-  userCell: { display: 'flex', alignItems: 'center', gap: 10 },
-  userAv: { width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, flexShrink: 0 },
-  userName: { fontSize: 13, fontWeight: 500 },
-  userSince: { fontSize: 11, color: 'var(--text3)' },
-  cellText: { fontSize: 13, color: 'var(--text2)' },
-  badge: { fontSize: 10, padding: '3px 10px', borderRadius: 20, fontWeight: 500, display: 'inline-flex' },
-  rowActions: { display: 'flex', gap: 6 },
-  rowBtn: { width: 28, height: 28, borderRadius: 6, border: '1px solid var(--border2)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' },
+  const [search, setLocalSearch] = useState('');
+  const [deleting, setDeleting] = useState(null);
 
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
-  modal: { background: '#fff', borderRadius: 16, padding: 28, width: 420, maxWidth: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' },
-  modalHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  modalTitle: { fontSize: 17, fontWeight: 700 },
-  closeBtn: { width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border2)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' },
-  formRow: { marginBottom: 14 },
-  label: { display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text3)', marginBottom: 6 },
-  input: { width: '100%', background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: 'var(--text)', outline: 'none' },
-  modalFooter: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 },
-  btnCancel: { padding: '9px 18px', border: '1px solid var(--border2)', borderRadius: 8, background: '#fff', fontSize: 13, color: 'var(--text2)', cursor: 'pointer' },
-  btnSave: { padding: '9px 18px', border: 'none', borderRadius: 8, background: 'var(--ink)', color: '#fff', fontSize: 13, fontFamily: 'Syne, sans-serif', fontWeight: 600, cursor: 'pointer' },
-};
+  const handleSearch = value => {
+    setLocalSearch(value);
+    setSearch(value);
+  };
+
+  const handleDelete = async selectedUser => {
+    if (selectedUser.id === me?.id) {
+      alert('Vous ne pouvez pas supprimer votre propre compte.');
+      return;
+    }
+
+    if (!window.confirm(`Supprimer «${selectedUser.name}» ?`)) return;
+
+    setDeleting(selectedUser.id);
+
+    try {
+      await deleteUser(selectedUser.id);
+    } catch (e) {
+      alert(e.response?.data?.message ?? 'Erreur');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const columns = [
+    {
+      key: 'name',
+      label: 'Utilisateur',
+      render: (_, row) => (
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+            {row.name?.[0]?.toUpperCase() ?? '?'}
+          </div>
+
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-900 text-sm truncate">
+              {row.name}
+            </p>
+            <p className="text-xs text-slate-400 truncate">
+              {row.email}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'role',
+      label: 'Rôle',
+      width: '100px',
+      render: value => <RoleBadge role={value} />,
+    },
+    {
+      key: 'created_at',
+      label: 'Inscrit le',
+      render: value => (
+        <span className="text-xs text-slate-500">
+          {fmt(value)}
+        </span>
+      ),
+    },
+    {
+      key: 'loans_count',
+      label: 'Prêts actifs',
+      width: '120px',
+      render: value => (
+        <span className={`text-sm font-semibold ${value > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
+          {value ?? 0}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: '130px',
+      render: (_, row) =>
+        row.id === me?.id || row.role === 'admin' ? (
+          <span className="text-xs text-slate-300 italic">
+            Protégé
+          </span>
+        ) : (
+          <Button
+            size="xs"
+            variant="danger"
+            loading={deleting === row.id}
+            onClick={() => handleDelete(row)}
+          >
+            Supprimer
+          </Button>
+        ),
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="page-title">Utilisateurs</h2>
+          <p className="page-subtitle">
+            {meta.total} membre{meta.total !== 1 ? 's' : ''} enregistré{meta.total !== 1 ? 's' : ''}
+          </p>
+        </div>
+
+        <Button
+          onClick={() => navigate('/admin/users/create')}
+          icon={<UserPlusIcon />}
+        >
+          Créer un utilisateur
+        </Button>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 flex-wrap">
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-64 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+            <SearchIcon />
+
+            <input
+              value={search}
+              onChange={e => handleSearch(e.target.value)}
+              placeholder="Rechercher un utilisateur…"
+              className="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none"
+            />
+
+            {search && (
+              <button
+                onClick={() => handleSearch('')}
+                className="text-slate-400 hover:text-slate-600 text-lg leading-none"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          <select className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+            <option value="">Tous les rôles</option>
+            <option value="admin">Admin</option>
+            <option value="user">Utilisateur</option>
+          </select>
+        </div>
+
+        <Table
+          columns={columns}
+          data={users}
+          loading={loading}
+          empty="Aucun utilisateur trouvé"
+        />
+
+        <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+          <span className="text-xs text-slate-400">
+            Page {meta.current_page} sur {meta.last_page} — {meta.total} résultats
+          </span>
+
+          <Pagination
+            page={meta.current_page}
+            lastPage={meta.last_page}
+            onPageChange={setPage}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
