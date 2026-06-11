@@ -33,10 +33,12 @@ export default function Login() {
     setError('');
 
     try {
-      const user = await login(form.email, form.password);
-      navigate(user.role === 'admin' ? '/admin/dashboard' : '/library', {
-        replace: true,
-      });
+      const data = await login(form.email, form.password);
+      if (data?.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        navigate('/library', { replace: true });
+      }
     } catch (err) {
       setError(err.response?.data?.message ?? 'Email ou mot de passe incorrect.');
     } finally {

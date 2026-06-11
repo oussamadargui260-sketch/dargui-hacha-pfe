@@ -160,15 +160,14 @@ export default function Myloans() {
           <button
             key={t.v}
             onClick={() => setTab(t.v)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-              tab === t.v
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${tab === t.v
                 ? t.v === 'overdue'
                   ? 'bg-red-500 text-white border-red-500'
                   : 'bg-blue-600 text-white border-blue-600'
                 : t.v === 'overdue'
                   ? 'bg-white text-red-500 border-red-200 hover:bg-red-50'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            }`}
+              }`}
           >
             {t.l}
             {t.v === 'overdue' && overdueCount > 0 && (
@@ -203,9 +202,8 @@ export default function Myloans() {
           {filtered.map(loan => (
             <div
               key={loan.id}
-              className={`bg-white border border-slate-200 border-l-4 ${
-                BORDER[loan.status] ?? 'border-l-slate-300'
-              } rounded-2xl p-4 flex gap-4 hover:shadow-md transition-shadow`}
+              className={`bg-white border border-slate-200 border-l-4 ${BORDER[loan.status] ?? 'border-l-slate-300'
+                } rounded-2xl p-4 flex gap-4 hover:shadow-md transition-shadow`}
             >
               <BookCover book={loan.book} />
 
@@ -233,7 +231,7 @@ export default function Myloans() {
                 {loan.status === 'overdue' ? (
                   <div className="mt-3 bg-red-50 rounded-xl px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
                     <p className="text-xs text-red-600 font-semibold">
-                      ⚠ En retard depuis le {fmt(loan.due_date)}
+                      ⚠ En retard depuis le {fmt(loan.dueDate)}
                     </p>
 
                     <Button
@@ -247,16 +245,16 @@ export default function Myloans() {
                   </div>
                 ) : loan.status === 'returned' ? (
                   <p className="mt-3 text-xs text-slate-400">
-                    ✓ Rendu le {fmt(loan.returned_at)}
+                    ✓ Rendu le {fmt(loan.returnDate)}
                   </p>
                 ) : (
                   <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
                     <div className="text-xs text-slate-500">
                       Emprunté le{' '}
-                      <b className="text-slate-700">{fmt(loan.borrowed_at)}</b>
+                      <b className="text-slate-700">{fmt(loan.borrowDate)}</b>
                       <span className="mx-2">·</span>
                       Échéance :{' '}
-                      <b className="text-slate-700">{fmt(loan.due_date)}</b>
+                      <b className="text-slate-700">{fmt(loan.dueDate)}</b>
                     </div>
 
                     <Button

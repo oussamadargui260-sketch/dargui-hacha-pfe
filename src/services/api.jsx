@@ -1,28 +1,34 @@
-// src/services/api.js
-import { mockBooks, mockLoans, mockUsers, mockDashboard } from '../mock/mockApi';
+import axios from "axios";
 
-const uid = () => parseInt(localStorage.getItem('lms_user_id') || '0');
+// Using proxy defined in package.json
+const api = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
 
-export const bookService = {
-  list:   p        => mockBooks.list(p).then(d => ({ data: d })),
-  get:    id       => mockBooks.get(id).then(d => ({ data: d })),
-  create: fd       => mockBooks.create(fd).then(d => ({ data: d })),
-  update: (id, fd) => mockBooks.update(id, fd).then(d => ({ data: d })),
-  delete: id       => mockBooks.delete(id).then(d => ({ data: d })),
-};
-export const loanService = {
-  list:    p      => mockLoans.list(p).then(d => ({ data: d })),
-  myLoans: ()     => mockLoans.myLoans(uid()).then(d => ({ data: d })),
-  borrow:  bookId => mockLoans.borrow(bookId, uid()).then(d => ({ data: d })),
-  return:  id     => mockLoans.return(id).then(d => ({ data: d })),
-};
-export const userService = {
-  list:           p => mockUsers.list(p).then(d => ({ data: d })),
-  create:         d => mockUsers.create(d).then(d => ({ data: d })),
-  delete:         id => mockUsers.delete(id).then(d => ({ data: d })),
-  updateProfile:  d => mockUsers.updateProfile(uid(), d).then(d => ({ data: d })),
-  changePassword: d => mockUsers.changePassword(uid(), d).then(d => ({ data: d })),
-};
-export const dashboardService = {
-  stats: () => mockDashboard.stats().then(d => ({ data: d })),
-};
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Redirect to login if unauthorized
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Endpoints are handled in separate service files.
+
+export default api;

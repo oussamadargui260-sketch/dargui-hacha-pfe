@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBooks } from '../../hooks/useBooks';
-import { bookService } from '../../services/api';
+import { bookService } from '../../services/bookService';
 import Table, { Pagination } from '../../components/Table';
 import { AvailBadge } from '../../components/Badge';
 import Button from '../../components/Button';
@@ -141,7 +141,7 @@ export default function Books() {
   const [view, setView] = useState('table');
 
   const totalAvailable = books.reduce(
-    (sum, book) => sum + Number(book.available_quantity ?? 0),
+    (sum, book) => sum + Number(book.available ?? 0),
     0
   );
 
@@ -208,7 +208,7 @@ export default function Books() {
         ),
     },
     {
-      key: 'available_quantity',
+      key: 'available',
       label: 'Disponible',
       width: '120px',
       render: value => <AvailBadge available={value ?? 0} />,
@@ -308,22 +308,20 @@ export default function Books() {
           <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-1">
             <button
               onClick={() => setView('table')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                view === 'table'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${view === 'table'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-900'
+                }`}
             >
               Table
             </button>
 
             <button
               onClick={() => setView('grid')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                view === 'grid'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${view === 'grid'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-900'
+                }`}
             >
               Cards
             </button>
@@ -385,7 +383,7 @@ export default function Books() {
                       </div>
 
                       <div className="flex items-center justify-between gap-2">
-                        <AvailBadge available={book.available_quantity ?? 0} />
+                        <AvailBadge available={book.available ?? 0} />
                         <span className="text-xs text-slate-400">
                           {book.category ?? '—'}
                         </span>

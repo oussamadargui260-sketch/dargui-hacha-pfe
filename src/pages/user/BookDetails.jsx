@@ -89,7 +89,7 @@ export default function BookDetails() {
   }
 
   const cover = getCover(book);
-  const available = book.available_quantity ?? 0;
+  const available = book.available ?? 0;
   const rating = Number(book.rating || 0);
 
   return (

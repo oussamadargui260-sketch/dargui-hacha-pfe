@@ -1,6 +1,6 @@
 // src/hooks/useBooks.js
 import { useState, useEffect, useCallback } from 'react';
-import { bookService } from '../services/api';
+import { bookService } from '../services/bookService';
 
 export function useBooks(init = {}) {
   const [books, setBooks] = useState([]);
@@ -22,12 +22,17 @@ export function useBooks(init = {}) {
     try {
       const { data } = await bookService.list(params);
 
-      setBooks(data.data ?? []);
-      setMeta({
-        total: data.total ?? 0,
-        last_page: data.last_page ?? 1,
-        current_page: data.current_page ?? 1,
-      });
+      if (Array.isArray(data)) {
+        setBooks(data);
+        setMeta({ total: data.length, last_page: 1, current_page: 1 });
+      } else {
+        setBooks(data.data ?? []);
+        setMeta({
+          total: data.total ?? 0,
+          last_page: data.last_page ?? 1,
+          current_page: data.current_page ?? 1,
+        });
+      }
     } finally {
       setLoading(false);
     }

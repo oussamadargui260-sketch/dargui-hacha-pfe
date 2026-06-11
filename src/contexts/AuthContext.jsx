@@ -1,6 +1,6 @@
 // src/contexts/AuthContext.js
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { mockAuth } from '../mock/mockApi';
+import * as authService from '../services/authService';
 
 const Ctx = createContext(null);
 
@@ -9,32 +9,41 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('lms_token');
+    const token = localStorage.getItem('token');
     if (token) {
-      mockAuth.getUser(token)
-        .then(u => setUser(u))
-        .catch(() => { localStorage.removeItem('lms_token'); localStorage.removeItem('lms_user_id'); })
-        .finally(() => setLoading(false));
+      // Typically, there's a getCurrentUser call that verifies the token.
+      // If authService doesn't have an API call for me(), we just use the user from localStorage
+      // which getCurrentUser does. However, it's safer to verify.
+      // Assuming getCurrentUser just reads from local storage for now:
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        authService.logout();
+      }
+      setLoading(false);
     } else { setLoading(false); }
   }, []);
 
   const login = useCallback(async (email, password) => {
-    const data = await mockAuth.login(email, password);
-    localStorage.setItem('lms_token', data.token);
-    localStorage.setItem('lms_user_id', String(data.user.id));
-    setUser(data.user); return data.user;
+    const userData = await authService.login(email, password);
+    setUser(userData);
+    return userData;
   }, []);
 
   const register = useCallback(async (payload) => {
-    const data = await mockAuth.register(payload);
-    localStorage.setItem('lms_token', data.token);
-    localStorage.setItem('lms_user_id', String(data.user.id));
-    setUser(data.user); return data.user;
+    // Assuming backend returns same structure as login
+    const data = await authService.register(payload);
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+    }
+    setUser(data.user);
+    return data.user;
   }, []);
 
   const logout = useCallback(async () => {
-    await mockAuth.logout();
-    localStorage.removeItem('lms_token'); localStorage.removeItem('lms_user_id');
+    authService.logout();
     setUser(null);
   }, []);
 

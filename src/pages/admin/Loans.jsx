@@ -27,6 +27,14 @@ function WarningIcon() {
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+    </svg>
+  );
+}
+
 function UserAvatar({ name }) {
   return (
     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-[11px] font-bold shrink-0">
@@ -36,8 +44,14 @@ function UserAvatar({ name }) {
 }
 
 export default function Loans() {
-  const { loans, meta, loading, params, setPage, setStatus, returnBook } = useLoans();
+  const { loans, meta, loading, params, setPage, setStatus, setSearch, returnBook } = useLoans();
   const [returning, setReturning] = useState(null);
+  const [search, setLocalSearch] = useState('');
+
+  const handleSearch = value => {
+    setLocalSearch(value);
+    setSearch(value);
+  };
 
   const handleReturn = async loan => {
     setReturning(loan.id);
@@ -78,7 +92,7 @@ export default function Loans() {
       ),
     },
     {
-      key: 'borrowed_at',
+      key: 'borrowDate',
       label: 'Emprunté le',
       render: value => (
         <span className="text-xs text-slate-500">
@@ -87,13 +101,12 @@ export default function Loans() {
       ),
     },
     {
-      key: 'due_date',
+      key: 'dueDate',
       label: 'Échéance',
       render: (value, row) => (
         <span
-          className={`text-xs font-semibold ${
-            row.status === 'overdue' ? 'text-red-600' : 'text-slate-500'
-          }`}
+          className={`text-xs font-semibold ${row.status === 'overdue' ? 'text-red-600' : 'text-slate-500'
+            }`}
         >
           {row.status === 'overdue' && <WarningIcon />}
           {fmt(value)}
@@ -122,7 +135,7 @@ export default function Loans() {
           </Button>
         ) : (
           <span className="text-xs text-slate-400">
-            {fmt(row.returned_at)}
+            {fmt(row.returnDate)}
           </span>
         ),
     },
@@ -137,24 +150,43 @@ export default function Loans() {
         </p>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        {TABS.map(tab => (
-          <button
-            key={tab.v}
-            onClick={() => setStatus(tab.v)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-              params.status === tab.v
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
+          {TABS.map(tab => (
+            <button
+              key={tab.v}
+              onClick={() => setStatus(tab.v)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${params.status === tab.v
                 ? tab.danger
                   ? 'bg-red-500 text-white border-red-500'
                   : 'bg-blue-600 text-white border-blue-600'
                 : tab.danger
                   ? 'bg-white text-red-500 border-red-200 hover:bg-red-50'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-            }`}
-          >
-            {tab.l}
-          </button>
-        ))}
+                }`}
+            >
+              {tab.l}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 w-64 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+          <SearchIcon />
+          <input
+            value={search}
+            onChange={e => handleSearch(e.target.value)}
+            placeholder="Rechercher utilisateur ou livre…"
+            className="flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none"
+          />
+          {search && (
+            <button
+              onClick={() => handleSearch('')}
+              className="text-slate-400 hover:text-slate-600 text-lg leading-none"
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">

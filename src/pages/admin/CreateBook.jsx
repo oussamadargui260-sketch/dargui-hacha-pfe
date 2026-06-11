@@ -1,7 +1,7 @@
 // src/pages/admin/CreateBook.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { bookService } from '../../services/api';
+import { bookService } from '../../services/bookService';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 

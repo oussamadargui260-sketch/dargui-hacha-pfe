@@ -95,15 +95,8 @@ function ActivityRow({ avatar, name, action, book, time, status }) {
   );
 }
 
-function TopBooks() {
-  const books = [
-    { title: 'Dune', author: 'Frank Herbert', count: 34 },
-    { title: '1984', author: 'George Orwell', count: 29 },
-    { title: 'Sapiens', author: 'Yuval Noah Harari', count: 22 },
-    { title: 'Clean Code', author: 'Robert C. Martin', count: 18 },
-  ];
-
-  const max = Math.max(...books.map(book => book.count));
+function TopBooks({ books = [] }) {
+  const max = Math.max(...books.map(b => Number(b.count)), 1);
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
@@ -137,7 +130,7 @@ function TopBooks() {
             <div className="w-24 h-2 rounded-full bg-slate-100 overflow-hidden shrink-0">
               <div
                 className="h-full bg-blue-600 rounded-full"
-                style={{ width: `${(book.count / max) * 100}%` }}
+                style={{ width: `${(Number(book.count) / max) * 100}%` }}
               />
             </div>
           </div>
@@ -147,37 +140,42 @@ function TopBooks() {
   );
 }
 
-const monthlyLoans = [
-  { month: 'Jan', emprunts: 12, retours: 8 },
-  { month: 'Fév', emprunts: 18, retours: 14 },
-  { month: 'Mar', emprunts: 15, retours: 11 },
-  { month: 'Avr', emprunts: 26, retours: 19 },
-  { month: 'Mai', emprunts: 31, retours: 24 },
-  { month: 'Juin', emprunts: 28, retours: 22 },
-];
-
-const categoryData = [
-  { name: 'Fiction', value: 78, color: '#2563eb' },
-  { name: 'Sciences', value: 54, color: '#22c55e' },
-  { name: 'Histoire', value: 41, color: '#f59e0b' },
-  { name: 'Technologie', value: 35, color: '#8b5cf6' },
-  { name: 'Philosophie', value: 22, color: '#ec4899' },
-];
-
-const statusData = [
-  { name: 'Empruntés', value: 9, color: '#2563eb' },
-  { name: 'Rendus', value: 14, color: '#22c55e' },
-  { name: 'En retard', value: 3, color: '#ef4444' },
-];
+const CATEGORY_COLORS = ['#2563eb', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 export default function Dashboard() {
   const { stats, loading } = useDashboard();
   const navigate = useNavigate();
 
+  const monthlyLoans = stats?.monthlyLoans ?? [];
+
+  const categoryData = (stats?.categoryData ?? []).map((cat, i) => ({
+    name: cat.name || 'Inconnu',
+    value: Number(cat.value),
+    color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+  })).sort((a, b) => b.value - a.value);
+
+  const statusData = [
+    { name: 'Empruntés', value: stats?.borrowedBooks ?? 0, color: '#2563eb' },
+    { name: 'Rendus', value: stats?.returnedBooks ?? 0, color: '#22c55e' },
+    { name: 'En retard', value: stats?.overdueBooks ?? 0, color: '#ef4444' },
+  ].filter(item => item.value > 0);
+
+  const getAction = (status) => {
+    if (status === 'returned') return 'a rendu';
+    if (status === 'overdue') return 'en retard sur';
+    return 'a emprunté';
+  };
+
+  const total = stats?.totalBooks || 1;
+  const avail = stats?.availableBooks || 0;
+  const borrowed = total - avail;
+  const usageRate = Math.round((borrowed / total) * 100);
+  const availRate = Math.round((avail / total) * 100);
+
   const cards = [
     {
       label: 'Total Livres',
-      value: stats?.total_books,
+      value: stats?.totalBooks,
       icon: 'books',
       color: 'blue',
       change: '+12 ce mois',
@@ -185,7 +183,7 @@ export default function Dashboard() {
     },
     {
       label: 'Utilisateurs',
-      value: stats?.total_users,
+      value: stats?.totalUsers,
       icon: 'users',
       color: 'green',
       change: '+28 ce mois',
@@ -193,7 +191,7 @@ export default function Dashboard() {
     },
     {
       label: 'Emprunts actifs',
-      value: stats?.active_loans,
+      value: stats?.borrowedBooks,
       icon: 'loans',
       color: 'amber',
       change: "+5 aujourd'hui",
@@ -201,7 +199,7 @@ export default function Dashboard() {
     },
     {
       label: 'En retard',
-      value: stats?.overdue_loans,
+      value: stats?.overdueBooks,
       icon: 'alert',
       color: 'red',
       change: 'Attention',
@@ -341,14 +339,24 @@ export default function Dashboard() {
           </div>
 
           <div className="px-5">
-            <ActivityRow avatar="J" name="James Doe" action="a emprunté" book="Dune" time="il y a 2 min" status="borrowed" />
-            <ActivityRow avatar="A" name="Alice Smith" action="a rendu" book="1984" time="il y a 18 min" status="returned" />
-            <ActivityRow avatar="M" name="Mark K." action="retard sur" book="Le Grand Gatsby" time="3 jours de retard" status="overdue" />
-            <ActivityRow avatar="N" name="Nadia B." action="a emprunté" book="Sapiens" time="il y a 1h" status="borrowed" />
+            {(stats?.recentActivity ?? []).map(act => (
+              <ActivityRow
+                key={act.id}
+                avatar={act.User?.name?.[0]?.toUpperCase() ?? '?'}
+                name={act.User?.name ?? 'Utilisateur'}
+                action={getAction(act.status)}
+                book={act.Book?.title ?? 'Livre inconnu'}
+                time={new Date(act.createdAt).toLocaleDateString('fr-FR')}
+                status={act.status}
+              />
+            ))}
+            {(!stats?.recentActivity || stats.recentActivity.length === 0) && (
+              <p className="text-xs text-slate-400 py-3 text-center">Aucune activité récente.</p>
+            )}
           </div>
         </div>
 
-        <TopBooks />
+        <TopBooks books={stats?.topBooks ?? []} />
 
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100">
@@ -359,28 +367,28 @@ export default function Dashboard() {
           <div className="p-5">
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-extrabold text-slate-900">82%</p>
+                <p className="text-3xl font-extrabold text-slate-900">{usageRate}%</p>
                 <p className="text-sm text-slate-500 mt-1">Taux d’utilisation</p>
               </div>
 
               <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
-                Stable
+                À jour
               </span>
             </div>
 
             <div className="h-3 bg-slate-100 rounded-full overflow-hidden mt-5">
-              <div className="h-full bg-blue-600 rounded-full" style={{ width: '82%' }} />
+              <div className="h-full bg-blue-600 rounded-full" style={{ width: `${usageRate}%` }} />
             </div>
 
             <div className="grid grid-cols-2 gap-3 mt-5">
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
                 <p className="text-xs text-slate-400 font-semibold">Disponibles</p>
-                <p className="text-lg font-bold text-slate-900 mt-1">68%</p>
+                <p className="text-lg font-bold text-slate-900 mt-1">{availRate}%</p>
               </div>
 
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
                 <p className="text-xs text-slate-400 font-semibold">Empruntés</p>
-                <p className="text-lg font-bold text-slate-900 mt-1">32%</p>
+                <p className="text-lg font-bold text-slate-900 mt-1">{usageRate}%</p>
               </div>
             </div>
           </div>

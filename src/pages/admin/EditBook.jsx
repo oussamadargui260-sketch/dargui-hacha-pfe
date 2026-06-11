@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBook } from '../../hooks/useBooks';
-import { bookService } from '../../services/api';
+import { bookService } from '../../services/bookService';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 

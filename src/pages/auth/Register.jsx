@@ -20,8 +20,15 @@ export default function Register() {
   const handleSubmit = async e => {
     e.preventDefault(); setLoading(true);
     try {
-      const user = await register(form);
-      navigate(user.role === 'admin' ? '/admin/dashboard' : '/library', { replace: true });
+      if (form.password !== form.password_confirmation) {
+        setErrors(e => ({ ...e, password_confirmation: 'Les mots de passe ne correspondent pas.' }));
+        setLoading(false);
+        return;
+      }
+      const data = await register(form);
+      alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+      navigate('/login', { replace: true });
+
     } catch (err) {
       const d = err.response?.data;
       setErrors(d?.errors ?? { name: d?.message ?? 'Une erreur est survenue.' });

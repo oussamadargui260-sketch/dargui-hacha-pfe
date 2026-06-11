@@ -28,7 +28,7 @@ function SearchIcon() {
 export default function Users() {
   const navigate = useNavigate();
   const { user: me } = useAuth();
-  const { users, meta, loading, setPage, setSearch, deleteUser } = useUsers();
+  const { users, meta, loading, setPage, setSearch, setRole, params, deleteUser } = useUsers();
 
   const [search, setLocalSearch] = useState('');
   const [deleting, setDeleting] = useState(null);
@@ -165,7 +165,11 @@ export default function Users() {
             )}
           </div>
 
-          <select className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+          <select
+            value={params.role || ''}
+            onChange={e => setRole(e.target.value)}
+            className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-slate-50 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+          >
             <option value="">Tous les rôles</option>
             <option value="admin">Admin</option>
             <option value="user">Utilisateur</option>

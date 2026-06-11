@@ -37,7 +37,7 @@ export default function Bookcard({
   const title = book?.title ?? 'Sans titre';
   const author = book?.author ?? 'Auteur inconnu';
   const category = book?.category;
-  const avail = book?.available_quantity ?? 0;
+  const avail = book?.available ?? 0;
   const cover = getCover(book);
 
   const goToDetails = () => {
@@ -49,9 +49,8 @@ export default function Bookcard({
   return (
     <div
       onClick={goToDetails}
-      className={`group bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
-        mode === 'user' ? 'cursor-pointer' : ''
-      }`}
+      className={`group bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${mode === 'user' ? 'cursor-pointer' : ''
+        }`}
     >
       <div className="relative h-48 bg-slate-100 overflow-hidden">
         {cover && !failed ? (
